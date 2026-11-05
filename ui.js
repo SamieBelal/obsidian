@@ -69,14 +69,12 @@
 
   // Ways into a room
 
-  function playSolo() {
+  function playSolo(bots) {
     const token = 'solo';
     const room = PXHost.createRoom({ send: (_t, s) => receive(s), timers: null });
     session.send = (action) => room.action(token, action);
     room.join(token, 'You');
-    room.addBot();
-    room.addBot();
-    room.addBot();
+    for (let n = 0; n < bots; n++) room.addBot();
   }
 
   function createRoom(name) {
@@ -145,7 +143,7 @@
     app.innerHTML = `
       <section class="setup home">
         <h1>Project X</h1>
-        <p class="pitch">Everyone calls an element, then plays a card at once. Beat someone on element for 1 damage, or 2 if your number is also higher. Same element: higher number deals 1. Last player standing wins.</p>
+        <p class="pitch">Call an element, play a card, and bluff your friends. Last one standing wins. For 2-6 players.</p>
         ${session.message ? `<p class="notice" role="alert">${esc(session.message)}</p>` : ''}
         ${session.mode === 'connecting' ? '' : `
         <label class="field">Your name<input id="name" maxlength="16" autocomplete="off" value="${esc(savedName())}" placeholder="Name your friends will see"></label>
@@ -163,7 +161,10 @@
           <div class="way">
             <h2>Practice</h2>
             <p>Play on your own against bots.</p>
-            <button class="action quiet" id="solo">Play against bots</button>
+            <div class="buttons start">
+              <button class="action quiet" id="duel">1v1 a bot</button>
+              <button class="action quiet" id="solo">Play a group</button>
+            </div>
           </div>
         </div>`}
       </section>`;
@@ -198,10 +199,10 @@
       const name = needName();
       if (name) createRoom(name);
     });
-    document.getElementById('solo').addEventListener('click', () => {
+    [['solo', 3], ['duel', 1]].forEach(([id, bots]) => document.getElementById(id).addEventListener('click', () => {
       saveName(document.getElementById('name').value.trim());
-      playSolo();
-    });
+      playSolo(bots);
+    }));
   }
 
   // Lobby

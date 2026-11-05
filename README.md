@@ -1,6 +1,6 @@
 # Project X
 
-A quick card game for 3-6 friends, in beta. Everyone calls an element, which can be a lie, then plays a card at the same time. Last player standing wins. Full rules are in [RULES.md](RULES.md).
+A quick card game for 2-6 friends, in beta. Everyone calls an element, which can be a lie, then plays a card at the same time. Last player standing wins. Full rules are in [RULES.md](RULES.md).
 
 **Play:** https://samiebelal.github.io/project-x/
 
@@ -8,7 +8,7 @@ A quick card game for 3-6 friends, in beta. Everyone calls an element, which can
 
 1. One person enters a name and selects **Create room**.
 2. They share the 4-letter code or the invite link.
-3. Everyone chooses a sub-element, and the host starts the game. Bots can fill empty seats.
+3. Everyone chooses a sub-element, and the host starts the game. A game needs at least 2 players, and bots can fill empty seats.
 
 The host's browser runs the game, so:
 

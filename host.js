@@ -6,7 +6,7 @@
 })(typeof self !== 'undefined' ? self : this, function (PX, PXBots) {
   const { STRATEGIES, chooseVote } = PXBots;
   const MAX_SEATS = 6;
-  const MIN_SEATS = 3;
+  const MIN_SEATS = 2;
   const BOT_NAMES = ['Reed', 'Flint', 'Marsh', 'Cinder', 'Slate'];
   const DEFAULT_TIMERS = { abilities: 20, calls: 20, cards: 30, reveal: 30 };
 

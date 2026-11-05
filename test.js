@@ -82,10 +82,25 @@ test('charge stops at the meter limit', () => {
 });
 
 test('sudden death adds 1 once two players remain', () => {
-  const s = game(['lightning', 'healing'], [[card('fire', 3), ...fill], [card('earth', 3), ...fill]]);
-  const r = playRound(s, [0, 0]);
+  const s = game(['lightning', 'healing', 'metal'], [[card('fire', 3), ...fill], [card('earth', 3), ...fill], [card('fire', 1), ...fill]]);
+  s.players[2].alive = false;
+  PX.beginRound(s);
+  const r = playRound(s, [0, 0, null]);
   assert.strictEqual(r.suddenDeath, true);
   assert.strictEqual(r.damage[1], 2);
+});
+
+test('a game that starts as a 1v1 only reaches sudden death at the set round, then it grows', () => {
+  const s = game(['lightning', 'healing'], [[card('fire', 3), ...fill], [card('earth', 3), ...fill]]);
+  let r = playRound(s, [0, 0]);
+  assert.strictEqual(r.suddenDeath, false);
+  assert.strictEqual(r.damage[1], 1);
+
+  s.round = PX.CONFIG.duelSuddenDeathRound - 1;
+  PX.beginRound(s);
+  assert.strictEqual(s.turn.suddenDeathBonus, PX.CONFIG.suddenDeathBonus);
+  PX.beginRound(s);
+  assert.strictEqual(s.turn.suddenDeathBonus, PX.CONFIG.suddenDeathBonus + 1);
 });
 
 test('Lightning hits regardless of the round, and costs 4', () => {
@@ -307,7 +322,7 @@ test('full bot games always finish with a winner', () => {
   const rng = PX.makeRng(11);
   for (let g = 0; g < 500; g++) {
     const subs = PX.subsFor(3);
-    const seats = Array.from({ length: 3 + (g % 4) }, (_, i) => ({ name: `P${i}`, sub: subs[Math.floor(rng() * subs.length)] }));
+    const seats = Array.from({ length: 2 + (g % 5) }, (_, i) => ({ name: `P${i}`, sub: subs[Math.floor(rng() * subs.length)] }));
     const s = PX.createGame({ seats, seed: g + 1 });
     while (!s.over) {
       for (const p of s.players) {

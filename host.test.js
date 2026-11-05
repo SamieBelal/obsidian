@@ -51,13 +51,12 @@ function actAll(t, tokens) {
   }
 }
 
-test('a game cannot start until 3 seats are filled and everyone has chosen', () => {
+test('a game cannot start until 2 seats are filled and everyone has chosen', () => {
   const t = setup();
   t.room.join('a', 'A');
-  t.room.join('b', 'B');
   t.room.action('a', { type: 'start' });
   assert.match(t.inbox.a.at(-1).message, /Add 1 more/);
-  t.room.action('a', { type: 'addBot' });
+  t.room.join('b', 'B');
   t.room.action('a', { type: 'start' });
   assert.match(t.inbox.a.at(-1).message, /Waiting for A, B to choose/);
   t.room.action('a', { type: 'pick', sub: 'healing' });
@@ -227,6 +226,25 @@ test('turning air off clears any air picks', () => {
   t.room.action('b', { type: 'pick', sub: 'flight' });
   t.room.action('a', { type: 'air', on: false });
   assert.strictEqual(t.latest('b').myPick, null);
+});
+
+test('two friends can play a full 1v1, and one player with a bot can too', () => {
+  const t = setup();
+  t.room.join('a', 'A');
+  t.room.join('b', 'B');
+  t.room.action('a', { type: 'pick', sub: 'lightning' });
+  t.room.action('b', { type: 'pick', sub: 'bloodbending' });
+  t.room.action('a', { type: 'start' });
+  for (let n = 0; n < 2000 && t.latest('a').stage !== 'over'; n++) actAll(t, ['a', 'b']);
+  assert.strictEqual(t.latest('a').stage, 'over');
+
+  const solo = setup({ timers: null });
+  solo.room.join('a', 'A');
+  solo.room.addBot();
+  solo.room.action('a', { type: 'pick', sub: 'metal' });
+  solo.room.action('a', { type: 'start' });
+  for (let n = 0; n < 2000 && solo.latest('a').stage !== 'over'; n++) actAll(solo, ['a']);
+  assert.strictEqual(solo.latest('a').stage, 'over');
 });
 
 test('solo play has no timers and waits for you', () => {

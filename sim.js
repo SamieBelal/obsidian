@@ -11,6 +11,7 @@ for (const [key, change] of Object.entries(JSON.parse(process.env.PX_TUNE || '{}
 }
 if (process.env.PX_HP) PX.CONFIG.maxHp = Number(process.env.PX_HP);
 if (process.env.PX_CALL) PX.CONFIG.callBonus = Number(process.env.PX_CALL);
+if (process.env.PX_DUEL_SD) PX.CONFIG.duelSuddenDeathRound = Number(process.env.PX_DUEL_SD);
 if (process.env.PX_SD) PX.CONFIG.suddenDeathBonus = Number(process.env.PX_SD);
 
 function playGame(seats, elementCount, seed, rng, strategies) {
@@ -120,7 +121,7 @@ for (const elementCount of [3, 4]) {
   const subs = PX.subsFor(elementCount);
   console.log(`\n=== ${elementCount} elements (${PX.elementsFor(elementCount).join(', ')}) ===`);
   console.log('players | avg rounds | 90th pct | first KO | stalled | hit of 7+  | shared win');
-  const tables = [3, 4, 5, 6].map((n) => runTable(elementCount, n));
+  const tables = [2, 3, 4, 5, 6].map((n) => runTable(elementCount, n));
   for (const t of tables) {
     console.log(
       `${pad(t.playerCount, 7)} | ${pad(t.rounds.toFixed(1), 10)} | ${pad(t.p90, 8)} | ${pad(t.firstKo.toFixed(1), 8)} | ` +
@@ -129,12 +130,12 @@ for (const elementCount of [3, 4]) {
   }
   console.log('\nStrength by sub-element (1.00 = fair share of wins), with uses per game at 5 players:');
   console.log(`${pad('', 14)}${tables.map((t) => pad(t.playerCount + 'p', 7)).join('')}uses`);
-  const five = tables[2];
+  const five = tables.find((t) => t.playerCount === 5);
   for (const k of subs) {
     console.log(`${pad(PX.SUBS[k].name, 14)}${tables.map((t) => pad(t.strength[k].toFixed(2), 7)).join('')}${five.usesPerGame[k].toFixed(1)}`);
   }
   console.log('\nSkill check: one careful player against random players');
-  for (const n of [3, 5]) {
+  for (const n of [2, 3, 5]) {
     const r = runSkill(elementCount, n);
     console.log(`${n} players: wins ${(r.rate * 100).toFixed(0)}% (fair share ${(r.fair * 100).toFixed(0)}%)`);
   }
@@ -155,8 +156,8 @@ function edge(playerCount, lead, rest) {
 }
 
 console.log('\n=== Calling (3 elements, share of wins where 1.00 is fair) ===');
-console.log('                                            3p    4p    5p    6p');
-const row = (label, lead, rest) => console.log(pad(label, 44) + [3, 4, 5, 6].map((n) => pad(edge(n, lead, rest), 6)).join(''));
+console.log('                                            2p    3p    4p    5p    6p');
+const row = (label, lead, rest) => console.log(pad(label, 44) + [2, 3, 4, 5, 6].map((n) => pad(edge(n, lead, rest), 6)).join(''));
 row('Baseline: nobody reads calls', makeSmart({ readCalls: false }), makeSmart({ readCalls: false }));
 row('One reader among players who ignore calls', makeSmart(), makeSmart({ readCalls: false }));
 row('One player ignoring calls among readers', makeSmart({ readCalls: false }), makeSmart());

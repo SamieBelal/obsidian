@@ -12,6 +12,7 @@
     chargeForMiss: 1,
     callBonus: 1,
     suddenDeathBonus: 1,
+    duelSuddenDeathRound: 8,
     roundLimit: 60,
   };
 
@@ -110,6 +111,7 @@
     const state = {
       elementCount,
       rng,
+      duel: seats.length === 2,
       round: 0,
       over: false,
       winners: [],
@@ -145,11 +147,13 @@
   function beginRound(state) {
     state.round += 1;
     const alive = state.players.filter((p) => p.alive).length;
-    if (alive === 2 && !state.suddenDeathRound) state.suddenDeathRound = state.round;
+    // A game that starts as a duel gets a normal stretch first, because two players remain from round 1.
+    const suddenDeath = alive === 2 && (!state.duel || state.round >= CONFIG.duelSuddenDeathRound);
+    if (suddenDeath && !state.suddenDeathRound) state.suddenDeathRound = state.round;
     state.turn = {
       phase: 'abilities',
-      suddenDeath: alive === 2,
-      suddenDeathBonus: alive === 2 ? CONFIG.suddenDeathBonus + (state.round - state.suddenDeathRound) : 0,
+      suddenDeath,
+      suddenDeathBonus: suddenDeath ? CONFIG.suddenDeathBonus + (state.round - state.suddenDeathRound) : 0,
       abilityChoices: {},
       publicAbilities: [],
       silenced: [],

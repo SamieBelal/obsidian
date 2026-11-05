@@ -4,7 +4,7 @@ Project X is a working name. Numbers below are what the game currently uses.
 
 ## Goal
 
-Be the last player standing. For 3-6 players.
+Be the last player standing. For 2-6 players.
 
 ## Setup
 
@@ -39,7 +39,7 @@ If you're bloodbent, you still call and can lie about your forced card.
 
 ## Sudden death
 
-Once two players remain, any damage gets +1, and that bonus grows by 1 each round until the game ends.
+Once two players remain, any damage gets +1, and that bonus grows by 1 each round until the game ends. A game that starts as a 1v1 reaches sudden death at round 8 instead.
 
 If everyone remaining falls in the same round, whoever had the most HP before that round wins. Ties share the win.
 
