@@ -65,6 +65,13 @@
     return BEATS[state.elementCount][a].includes(b);
   }
 
+  // Damage card a deals to card b: 0 if it doesn't beat it, 1 if it does, 2 if it wins on element with a higher number.
+  function matchupDamage(elementCount, a, b) {
+    if (a.el === b.el) return a.power > b.power ? 1 : 0;
+    if (!BEATS[elementCount][a.el].includes(b.el)) return 0;
+    return a.power > b.power ? 2 : 1;
+  }
+
   function buildDeck(playerIndex, elementCount, rng) {
     const deck = [];
     for (const el of elementsFor(elementCount)) {
@@ -290,13 +297,10 @@
     };
 
     // You beat a player with a winning element, or with a higher number in the same element.
-    const landsOn = (a, t) => beats(state, a.card.el, t.card.el) || (a.card.el === t.card.el && a.power > t.power);
+    const asCard = (play) => ({ el: play.card.el, power: play.power });
+    const landsOn = (a, t) => matchupDamage(state.elementCount, asCard(a), asCard(t)) > 0;
 
-    // 1 damage for beating a player, +1 if you won on element and your number is also higher.
-    const damageTo = (a, t) => {
-      const amount = 1 + (a.card.el !== t.card.el && a.power > t.power ? 1 : 0);
-      return amount * (a.doubled ? 2 : 1);
-    };
+    const damageTo = (a, t) => matchupDamage(state.elementCount, asCard(a), asCard(t)) * (a.doubled ? 2 : 1);
 
     for (const target of plays) {
       const attackers = plays.filter((a) => !a.silenced && a.player !== target.player && landsOn(a, target));
@@ -421,6 +425,6 @@
   return {
     CONFIG, BEATS, SUBS, ABILITY_ORDER, makeRng, shuffle, elementsFor, subsFor,
     createGame, beginRound, canUseAbility, submitAbility, resolveAbilities, submitCall, revealCalls,
-    submitCard, submitVote, resolveRound, viewFor, spiritElement, beats,
+    submitCard, submitVote, resolveRound, viewFor, spiritElement, beats, matchupDamage,
   };
 });

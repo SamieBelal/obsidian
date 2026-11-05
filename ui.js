@@ -58,6 +58,8 @@
       return;
     }
     if (!before || before.needs !== state.needs || (before.view && before.view.round !== state.view?.round)) session.pick = null;
+    if (before && before.screen === 'lobby' && state.screen === 'game') PXHelp.close();
+    if (!before && state.screen === 'lobby') PXHelp.openIfNew();
     session.state = state;
     session.mode = 'room';
     session.message = '';

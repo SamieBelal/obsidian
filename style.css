@@ -195,7 +195,7 @@ button:disabled { cursor: not-allowed; }
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   gap: 0.75rem;
-  min-height: 100vh;
+  min-height: calc(100vh - 2.5rem);
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.75rem 1rem 1rem;
@@ -603,4 +603,139 @@ button.seat:hover { background: #55416A; }
 @media (max-width: 620px) {
   .hint.end { text-align: left; }
   .room-code .action { width: 100%; }
+}
+
+/* Toolbar */
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  height: 2.5rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.35rem 1rem 0;
+}
+
+.tool {
+  padding: 0 0.7rem;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--soft);
+  font-size: 0.925rem;
+  font-weight: 600;
+}
+
+.tool:hover { color: var(--bone); background: var(--raised); }
+
+#help-open { color: var(--bone); text-decoration: underline; text-underline-offset: 3px; }
+
+/* How to play */
+
+#help {
+  width: min(40rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 1.5rem);
+  padding: 1rem 1.25rem 1.1rem;
+  background: var(--raised);
+  color: var(--bone);
+  border: 0;
+  border-radius: 8px;
+}
+
+#help::backdrop { background: rgba(20, 12, 28, 0.78); }
+
+.help-head, .help-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.help-progress { color: var(--soft); font-size: 0.925rem; }
+
+#help h2 {
+  margin: 0.6rem 0 0.75rem;
+  font: 400 clamp(1.5rem, 5vw, 2.1rem)/1.15 var(--display);
+  outline: none;
+}
+
+.help-body { min-height: 17rem; }
+
+.help-body p { margin: 0.7rem 0; }
+
+.help-body ul, .help-body ol { margin: 0.7rem 0; padding: 0; list-style: none; }
+
+.help-foot { margin-top: 1rem; }
+
+.help-body .card { flex: none; width: 58px; }
+
+.card-row { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+
+.help-body > .card-row .card { width: 72px; }
+
+.pair { display: inline-flex; align-items: center; gap: 0.45rem; flex: none; }
+
+.versus { color: var(--soft); font-size: 0.9rem; }
+
+.cycle-list { display: flex; flex-wrap: wrap; gap: 0.9rem 1.5rem; }
+
+.matchup {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.45rem 0;
+  border-bottom: 2px solid var(--line);
+}
+
+.matchup .card { width: 44px; }
+
+.practice { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+
+.practice p { margin: 0 0 0.4rem; font-weight: 600; }
+
+.practice .rival .card { width: 72px; }
+
+.practice button.card { width: 72px; box-shadow: 0 0 0 2px var(--line); }
+
+.practice button.card:hover { box-shadow: 0 0 0 3px var(--bone); }
+
+.practice button.card.chosen { box-shadow: 0 0 0 4px var(--bone); }
+
+.practice-result {
+  min-height: 4.5em;
+  padding: 0.6rem 0.8rem;
+  background: var(--table);
+  border-radius: 4px;
+}
+
+.round-steps { counter-reset: step; }
+
+.round-steps li {
+  position: relative;
+  padding: 0 0 0.7rem 2.2rem;
+  counter-increment: step;
+}
+
+.round-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -0.1rem;
+  font: 400 1.3rem/1.3 var(--display);
+}
+
+.charge-list li { padding-bottom: 0.45rem; }
+
+.ability-list { font-size: 0.925rem; }
+
+.ability-list li { padding: 0.3rem 0; line-height: 1.35; }
+
+.el-dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--el);
 }

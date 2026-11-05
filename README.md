@@ -31,6 +31,8 @@ There's no build step and nothing to install.
 | `host.js` | Runs a room, and decides what each player can see |
 | `net.js` | Connects browsers with [PeerJS](https://peerjs.com/) |
 | `ui.js`, `art.js`, `style.css` | The screens and placeholder card art |
+| `help.js` | The how-to-play walkthrough |
+| `music.js` | Background music, with the volume set at the top of the file |
 | `sim.js` | Balance simulator |
 
 Project X is a working name. It's a fan-made beta, not affiliated with Avatar: The Last Airbender or Club Penguin.

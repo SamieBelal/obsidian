@@ -10,13 +10,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <nav class="toolbar">
+    <button class="tool" id="help-open">How to play</button>
+    <button class="tool" id="music-toggle">Music on</button>
+  </nav>
   <main id="app"></main>
+  <dialog id="help" aria-labelledby="help-title"></dialog>
   <script src="vendor/peerjs.min.js"></script>
   <script src="engine.js"></script>
   <script src="bots.js"></script>
   <script src="art.js"></script>
   <script src="host.js"></script>
   <script src="net.js"></script>
+  <script src="help.js"></script>
+  <script src="music.js"></script>
   <script src="ui.js"></script>
 </body>
 </html>
