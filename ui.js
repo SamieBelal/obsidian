@@ -329,46 +329,84 @@
 
   // Lobby
 
+  // The side panel describing one power: what it costs, what it does, and how you charge it.
+  function powerDetail(key) {
+    if (!key) {
+      return `<p class="detail-empty">Pick a power. It decides your element for the whole game, and only you know it until the game starts.</p>`;
+    }
+    const sub = SUBS[key];
+    const pips = Array.from({ length: CONFIG.maxCharge }, (_, n) => `<i class="${n < sub.cost ? 'on' : ''}"></i>`).join('');
+    return `<span class="detail-el">${icon(sub.element)}${cap(sub.element)}</span>
+      <h3>${sub.name}</h3>
+      <p class="detail-what">${sub.text}</p>
+      <div class="detail-cost"><span class="pips" aria-label="Costs ${sub.cost} of ${CONFIG.maxCharge} charge">${pips}</span>${sub.cost} charge</div>
+      <p class="detail-how">Your element becomes <strong>${sub.element}</strong>. Play ${sub.element} cards to charge it: +${CONFIG.chargeForHit} if they beat someone, +${CONFIG.chargeForMiss} if not.</p>`;
+  }
+
   function renderLobby(s) {
     const subs = PX.subsFor(s.elementCount);
     const invite = s.code ? `${location.origin}${location.pathname}?room=${s.code}` : '';
+    const groups = PX.elementsFor(s.elementCount).map((el) => ({ el, keys: subs.filter((k) => SUBS[k].element === el) })).filter((g) => g.keys.length);
+    const chips = s.seats.map((seat, i) => {
+      const who = `${esc(seat.name)}${i === s.me && seat.name !== 'You' ? ' (you)' : ''}`;
+      const role = [i === 0 && s.code ? 'host' : '', seat.bot ? 'bot' : ''].filter(Boolean).join(', ');
+      const ready = seat.bot || seat.picked;
+      return `<li class="chip ${ready ? 'ready' : ''}">
+        <span class="chip-dot" aria-hidden="true"></span>
+        <span class="chip-name">${who}${role ? `<small>${role}</small>` : ''}</span>
+        <span class="chip-state">${ready ? 'Ready' : 'Choosing'}</span>
+        ${s.isHost && seat.bot ? `<button class="chip-remove" data-remove="${i}" aria-label="Remove ${esc(seat.name)}">&times;</button>` : ''}
+      </li>`;
+    }).join('');
     app.innerHTML = `
       <section class="setup lobby">
-        ${s.code ? `<div class="room-code">
-          <div><h1>${esc(s.code)}</h1><p class="pitch">Your friends join with this code.</p></div>
-          <button class="action" id="copy">Copy invite link</button>
-        </div>` : '<h1>Practice</h1>'}
+        <header class="lobby-head">
+          ${s.code ? `<div class="room-code">
+            <div><h1>${esc(s.code)}</h1><p class="pitch">Your friends join with this code.</p></div>
+            <button class="action" id="copy">Copy invite link</button>
+          </div>` : '<h1>Practice</h1>'}
+        </header>
         ${session.message ? `<p class="notice" role="alert">${esc(session.message)}</p>` : ''}
-        <h2>Players (${s.seats.length} of ${PXHost.MAX_SEATS})</h2>
-        <ul class="roster">
-          ${s.seats.map((seat, i) => `<li>
-            <span class="roster-name">${esc(seat.name)}${i === s.me ? ' (you)' : ''}${i === 0 && s.code ? ', host' : ''}${seat.bot ? ', bot' : ''}</span>
-            <span class="roster-state">${seat.bot ? '' : seat.picked ? 'Ready' : 'Choosing'}</span>
-            ${s.isHost && seat.bot ? `<button class="action quiet small" data-remove="${i}">Remove</button>` : ''}
-          </li>`).join('')}
-        </ul>
-        ${s.isHost && s.seats.length < PXHost.MAX_SEATS ? '<button class="action quiet" id="add-bot">Add a bot</button>' : ''}
-        <h2 class="gap">Choose your sub-element</h2>
+        <div class="players">
+          <h2>Players <small>${s.seats.length} of ${PXHost.MAX_SEATS}</small></h2>
+          <ul class="chips">${chips}
+            ${s.isHost && s.seats.length < PXHost.MAX_SEATS ? '<li><button class="chip add" id="add-bot">+ Add a bot</button></li>' : ''}
+          </ul>
+        </div>
+        <h2 class="gap">Choose your power</h2>
         <p class="hint">Nobody sees your choice until the game starts.</p>
-        <div class="sub-grid">
-          ${subs.map((key) => {
-            const sub = SUBS[key];
-            return `<button class="sub-tile el-${sub.element}" data-sub="${key}" aria-pressed="${key === s.myPick}">
-              <span class="print">${powerArt(key) || cardArt(sub.element, sub.cost >= 4 ? 6 : 3, false)}</span>
-              <span class="words">
-                <h3>${sub.name}</h3>
-                <span class="cost">${cap(sub.element)}, ${sub.cost} charge</span>
-                <span class="what">${sub.text}</span>
-              </span>
-            </button>`;
-          }).join('')}
+        <div class="draft ${s.myPick ? 'has-pick' : ''}">
+          <div class="draft-cards">
+            ${groups.map((g) => `<div class="draft-group el-${g.el}">
+              <h3>${icon(g.el)}${cap(g.el)}</h3>
+              <div class="draft-row">${g.keys.map((key) => `<button class="power-pick" data-sub="${key}" aria-pressed="${key === s.myPick}">
+                ${powerArt(key)}
+                <span class="pick-name">${SUBS[key].name}</span>
+                <span class="pick-cost">${SUBS[key].cost} charge</span>
+              </button>`).join('')}</div>
+            </div>`).join('')}
+          </div>
+          <aside class="draft-detail ${s.myPick ? `el-${SUBS[s.myPick].element}` : ''}" aria-live="polite">${powerDetail(s.myPick)}</aside>
         </div>
-        ${s.isHost ? `<div class="options">
-          <button class="action" id="start" ${s.blockers.length ? 'disabled' : ''}>Start game</button>
+        <div class="lobby-foot">
+          ${s.isHost ? `${s.blockers.length ? `<p class="hint">${esc(s.blockers.join('. '))}.</p>` : '<p class="hint">Everyone is ready.</p>'}
+            <button class="action start" id="start" ${s.blockers.length ? 'disabled' : ''}>Start game</button>`
+            : '<p class="hint">The host starts the game once everyone has chosen.</p>'}
         </div>
-        ${s.blockers.length ? `<p class="hint end">${esc(s.blockers.join('. '))}.</p>` : ''}` : '<p class="hint">The host starts the game once everyone has chosen.</p>'}
       </section>`;
 
+    // Hovering a power previews it in the side panel; leaving shows your pick again.
+    const detail = app.querySelector('.draft-detail');
+    const show = (key) => {
+      detail.className = `draft-detail ${key ? `el-${SUBS[key].element}` : ''}`;
+      detail.innerHTML = powerDetail(key);
+    };
+    app.querySelectorAll('.power-pick').forEach((b) => {
+      b.addEventListener('mouseenter', () => show(b.dataset.sub));
+      b.addEventListener('focus', () => show(b.dataset.sub));
+      b.addEventListener('mouseleave', () => show(s.myPick));
+      b.addEventListener('blur', () => show(s.myPick));
+    });
     app.querySelectorAll('[data-sub]').forEach((b) => b.addEventListener('click', () => session.send({ type: 'pick', sub: b.dataset.sub })));
     app.querySelectorAll('[data-remove]').forEach((b) => b.addEventListener('click', () => session.send({ type: 'removeBot', seat: Number(b.dataset.remove) })));
     const on = (id, fn, event = 'click') => { const el = document.getElementById(id); if (el) el.addEventListener(event, fn); };

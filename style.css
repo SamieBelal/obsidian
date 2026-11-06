@@ -1285,3 +1285,227 @@ button.seat:hover { background: linear-gradient(180deg, rgba(20, 52, 48, 0.95), 
   .action.power { min-width: 0; padding: 0.5rem 0.9rem 0.6rem; font-size: 1rem; }
   .topline h2 { font-size: 1.5rem; }
 }
+
+/* ==========================================================================
+   Lobby: choose your power. Painted power cards grouped by element, a panel
+   describing the hovered or picked power, players as chips, a gold Start button.
+   ========================================================================== */
+
+.lobby { max-width: 1120px; }
+
+.lobby .lobby-head h1 { font-size: clamp(2.4rem, 6vw, 3.8rem); }
+
+.lobby .room-code { padding: 1rem 1.25rem; }
+
+.lobby h2 { font: 800 1.45rem/1.2 var(--display); }
+
+.lobby h2 small { margin-left: 0.4rem; font: 600 0.9rem var(--body); color: var(--soft); }
+
+.lobby h2.gap { margin-top: 1.6rem; margin-bottom: 0.2rem; }
+
+/* Players */
+.players { margin-top: 1.2rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(6, 18, 17, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--bone);
+}
+
+.chip.ready { border-color: rgba(140, 220, 160, 0.55); }
+
+.chip-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--soft); opacity: 0.6; }
+
+.chip.ready .chip-dot { background: #8CDCA0; opacity: 1; box-shadow: 0 0 8px #8CDCA0; }
+
+.chip-name { font-weight: 700; }
+
+.chip-name small { margin-left: 0.35rem; font-weight: 400; color: var(--soft); }
+
+.chip-state { font-size: 0.85rem; color: var(--soft); }
+
+.chip-remove {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: -0.3rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--soft);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.chip-remove:hover { background: rgba(255, 255, 255, 0.1); color: var(--bone); }
+
+.chip.add { border-style: dashed; color: var(--soft); font: inherit; font-weight: 700; cursor: pointer; }
+
+.chip.add:hover { color: var(--bone); border-color: var(--gold); }
+
+/* The draft */
+.draft {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 0.9rem;
+}
+
+.draft-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
+
+.draft-group h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  font: 800 1.15rem/1 var(--display);
+  color: color-mix(in srgb, var(--el) 70%, #FFF);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--el) 60%, transparent);
+}
+
+.draft-group h3 .el-icon { width: 1.5em; height: 1.5em; }
+
+.draft-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+.power-pick {
+  position: relative;
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--bone);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.18s ease-out, opacity 0.18s ease-out, filter 0.18s ease-out;
+}
+
+.power-pick .power-img {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--el) 55%, transparent), 0 8px 18px rgba(0, 0, 0, 0.55);
+  transition: box-shadow 0.18s ease-out;
+}
+
+.power-pick:hover, .power-pick:focus-visible { transform: translateY(-5px); }
+
+.power-pick:hover .power-img { box-shadow: 0 0 0 2px color-mix(in srgb, var(--el) 80%, #FFF), 0 0 22px color-mix(in srgb, var(--el) 60%, transparent); }
+
+/* Once a power is picked, the others step back and the pick stands out. */
+.draft.has-pick .power-pick:not([aria-pressed='true']) { opacity: 0.55; filter: saturate(0.65); }
+
+.draft.has-pick .power-pick:not([aria-pressed='true']):hover { opacity: 0.9; filter: none; }
+
+.power-pick[aria-pressed='true'] { transform: translateY(-8px); }
+
+.power-pick[aria-pressed='true'] .power-img {
+  box-shadow: 0 0 0 3px var(--gold), 0 0 30px color-mix(in srgb, var(--el) 75%, transparent);
+}
+
+.power-pick[aria-pressed='true']::after {
+  content: '\2713';
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  font: 800 1.05rem/30px var(--body);
+  box-shadow: 0 0 10px rgba(217, 174, 82, 0.8);
+}
+
+.pick-name { display: block; margin-top: 0.5rem; font: 800 1rem/1.15 var(--display); }
+
+.pick-cost { display: block; font-size: 0.8rem; color: var(--soft); }
+
+/* The panel describing a power */
+.draft-detail {
+  position: sticky;
+  top: 1rem;
+  min-height: 15rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  background: var(--panel);
+  border: 1.5px solid color-mix(in srgb, var(--el, var(--gold)) 70%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--el, var(--gold)) 30%, transparent);
+}
+
+.detail-empty { color: var(--soft); line-height: 1.5; }
+
+.detail-el {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--el) 70%, #FFF);
+}
+
+.detail-el .el-icon { width: 1.4rem; height: 1.4rem; }
+
+.draft-detail h3 { margin: 0.25rem 0 0.6rem; font: 800 1.9rem/1.1 var(--display); }
+
+.detail-what { font-size: 1.05rem; line-height: 1.45; }
+
+.detail-cost { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0; font-weight: 700; }
+
+.detail-cost .pips i { width: 13px; height: 13px; }
+
+.detail-how {
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--soft);
+}
+
+.detail-how strong { color: var(--bone); }
+
+/* Start */
+.lobby-foot { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.6rem; }
+
+.lobby-foot .hint { margin: 0; }
+
+.action.start {
+  padding: 0.85rem 2.4rem;
+  font-size: 1.25rem;
+  color: #2A1A05;
+  background: linear-gradient(180deg, #F4D37A, #C9952F);
+  border: 2px solid #FBE7A6;
+  box-shadow: 0 0 20px rgba(217, 174, 82, 0.5);
+}
+
+.action.start:hover:not(:disabled) { background: linear-gradient(180deg, #FADF92, #D7A23A); box-shadow: 0 0 28px rgba(217, 174, 82, 0.75); }
+
+.action.start:disabled { opacity: 0.45; box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .power-pick, .power-pick .power-img { transition: none; }
+  .power-pick:hover, .power-pick:focus-visible, .power-pick[aria-pressed='true'] { transform: none; }
+}
+
+@media (max-width: 860px) {
+  .draft { grid-template-columns: 1fr; }
+  .draft-detail { position: static; min-height: 0; }
+}
+
+/* Phones: one narrow column per element, its two powers stacked, so all six fit on one screen. */
+@media (max-width: 560px) {
+  .draft-cards { gap: 0.6rem; }
+  .draft-row { grid-template-columns: 1fr; gap: 0.9rem; }
+  .draft-group h3 { font-size: 1rem; }
+  .pick-name { font-size: 0.9rem; }
+  .power-pick[aria-pressed='true']::after { top: -7px; right: -7px; width: 24px; height: 24px; font-size: 0.9rem; line-height: 24px; }
+  .lobby-foot { flex-direction: column-reverse; align-items: stretch; text-align: center; }
+}
