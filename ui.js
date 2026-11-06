@@ -582,13 +582,12 @@
         <header class="topline">
           <h2>Round ${round}</h2>
           ${sudden}
-          <span class="countdown" id="countdown"></span>
           <span class="cycle">${cycleText(s.elementCount)} Same element: higher number wins. Play ${me.element} to earn charge.</span>
         </header>
         ${session.status === 'lost' ? '<p class="notice" role="alert">Lost the connection to the host. Trying to reconnect...</p>' : ''}
         ${session.message ? `<p class="notice" role="alert">${esc(session.message)}</p>` : ''}
         <div class="seats">${rivals.map((p) => seatHtml(s, p)).join('')}</div>
-        <div class="middle" aria-live="polite">${middleHtml(s)}</div>
+        <div class="middle"><div class="clock" id="countdown" aria-hidden="true"></div><div class="middle-body" aria-live="polite">${middleHtml(s)}</div></div>
         <div class="mine">
           <div class="me-line el-${me.element}${powerClasses(me)}" data-seat="${s.me}">
             <span class="who">${sub.name}</span>
@@ -637,7 +636,15 @@
   function tick() {
     const el = document.getElementById('countdown');
     if (!el) return;
-    el.textContent = session.deadline === null ? '' : `${Math.max(0, Math.ceil((session.deadline - Date.now()) / 1000))}s left`;
+    if (session.deadline === null) {
+      el.textContent = '';
+      el.className = 'clock';
+      return;
+    }
+    const left = Math.max(0, Math.ceil((session.deadline - Date.now()) / 1000));
+    el.textContent = left;
+    // The last few seconds turn red and pulse.
+    el.className = `clock on${left <= 5 ? ' low' : ''}`;
   }
 
   function render() {
