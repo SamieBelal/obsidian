@@ -10,7 +10,7 @@
   --earth: #C49235;
   --air: #A9D2C8;
   --hurt: #FF9C7A;
-  --display: 'Bowlby One', Impact, 'Arial Black', sans-serif;
+  --display: 'Alegreya', Georgia, 'Times New Roman', serif; /* only the 800 weight is loaded, so every heading is bold */
   --body: 'Familjen Grotesk', 'Segoe UI', system-ui, sans-serif;
 }
 
@@ -1098,4 +1098,190 @@ button.seat:hover { background: #55416A; }
   .triangle { width: min(225px, 100%); }
   .tut-board { grid-template-columns: repeat(2, 1fr); }
   .help-body { min-height: 0; }
+}
+
+/* ==========================================================================
+   Crystal cave theme: the painted cave behind everything, dark glass panels
+   edged in each element's color, gold corner curls, and the jade timer medallion.
+   Art lives in art/board. These rules come last, so they win over the ones above.
+   ========================================================================== */
+
+:root {
+  --table: #08130F;
+  --raised: rgba(9, 26, 24, 0.86);
+  --line: #2E5A50;
+  --soft: #B7CFC5;
+  --ink: #0A1512;
+  --gold: #D9AE52;
+  --panel: linear-gradient(180deg, rgba(12, 34, 32, 0.9), rgba(6, 19, 18, 0.9));
+}
+
+/* The cave, fixed behind the page and darkened a little so text stays readable. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(4, 12, 10, 0.15), rgba(4, 12, 10, 0.6)),
+    url('art/board/cave.webp') center 40% / cover no-repeat,
+    var(--table);
+}
+
+/* Dark glass panels with a glowing edge in the player's element color. */
+.seat, .me-line, .call, .room-code, .way, .sub-tile {
+  position: relative;
+  background: var(--panel);
+  border: 1.5px solid color-mix(in srgb, var(--el, var(--gold)) 70%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--el, var(--gold)) 30%, transparent), inset 0 0 22px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.seat { border-left-width: 1.5px; padding: 0.7rem 0.9rem 0.75rem; }
+
+button.seat { box-shadow: 0 0 0 3px var(--bone), 0 0 22px color-mix(in srgb, var(--el) 50%, transparent); }
+
+button.seat:hover { background: linear-gradient(180deg, rgba(20, 52, 48, 0.95), rgba(10, 30, 28, 0.95)); }
+
+/* Gold cloud curls on two opposite corners of each player panel. */
+.seat::before, .seat::after, .me-line::before, .me-line::after {
+  content: '';
+  position: absolute;
+  width: 46px;
+  height: 43px;
+  background: url('art/board/corner.webp') center / contain no-repeat;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(217, 174, 82, 0.5));
+}
+
+.seat::before, .me-line::before { top: -10px; left: -10px; }
+
+.seat::after, .me-line::after { right: -10px; bottom: -10px; transform: rotate(180deg); }
+
+.seat .who { display: flex; align-items: center; gap: 0.5rem; font: 800 1.1rem/1.15 var(--display); }
+
+.seat .class { font: 400 0.85rem/1.3 var(--body); color: var(--soft); }
+
+.el-icon { flex: none; width: 1.6em; height: 1.6em; object-fit: contain; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6)); }
+
+.hp-label { white-space: nowrap; font-family: var(--display); }
+
+.hp-bar { height: 9px; background: rgba(0, 0, 0, 0.55); border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+
+.hp-bar span { background: linear-gradient(90deg, #F2E2B6, #FFF6DC); border-radius: 5px; box-shadow: 0 0 8px rgba(255, 238, 190, 0.55); }
+
+/* The top line: the round on the left, the rules in a pill in the middle. */
+.topline { align-items: center; }
+
+.topline h2 { font: 800 1.9rem/1.1 var(--display); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+
+.topline .cycle {
+  padding: 0.35rem 1.1rem;
+  background: rgba(6, 18, 17, 0.82);
+  border: 1px solid rgba(217, 174, 82, 0.55);
+  border-radius: 999px;
+  color: var(--bone);
+  box-shadow: 0 0 12px rgba(217, 174, 82, 0.2);
+}
+
+.toolbar .tool { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
+
+/* Your side of the table. */
+.mine { border-top: 0; padding-top: 0.2rem; }
+
+.me-line { padding: 0.65rem 1rem; }
+
+.me-line .who { display: flex; align-items: center; gap: 0.5rem; border-left: 0; padding-left: 0; font: 800 1.15rem/1.2 var(--display); }
+
+/* The timer sits inside the jade medallion. */
+.clock.on {
+  position: relative;
+  width: 260px;
+  height: 150px;
+  min-height: 0;
+  margin: 0 auto;
+  padding-top: 26px;
+  font: 800 3.6rem/1 var(--display);
+  color: #F4FFF4;
+  text-shadow: 0 0 14px rgba(140, 255, 170, 0.45), 0 2px 4px rgba(0, 0, 0, 0.8);
+  background:
+    url('art/board/medallion.webp') center / contain no-repeat,
+    radial-gradient(circle 64px at 50% 47%, rgba(4, 16, 12, 0.94) 98%, transparent 100%);
+}
+
+.clock.on::after { margin-top: 0.15rem; color: #CFE8D6; font-size: 0.72rem; }
+
+.clock.low { color: #FFB59A; text-shadow: 0 0 16px rgba(255, 110, 70, 0.7), 0 2px 4px rgba(0, 0, 0, 0.8); }
+
+/* Middle text reads over the cave floor. */
+.middle .prompt, .middle .story, .calls h3, .board-note { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
+
+/* Glowing element buttons with their icon. */
+.action { border-radius: 12px; font-family: var(--display); font-weight: 800; letter-spacing: 0.01em; }
+
+.action.power {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 9.5rem;
+  padding: 0.6rem 1.4rem 0.7rem;
+  color: #FFF8EC;
+  font-size: 1.15rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--el) 85%, #000), color-mix(in srgb, var(--el) 45%, #000));
+  border: 2px solid color-mix(in srgb, var(--el) 60%, #FFF);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--el) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.action.power .el-icon { width: 2rem; height: 2rem; }
+
+.action.power:hover { transform: translateY(-2px); box-shadow: 0 0 28px color-mix(in srgb, var(--el) 75%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+
+.action.quiet { background: rgba(6, 18, 17, 0.7); }
+
+/* The calls panel. */
+.call { border-top-width: 1.5px; }
+
+.call-el { display: flex; align-items: center; justify-content: center; gap: 0.35rem; font: 800 1.45rem/1.1 var(--display); }
+
+.call-el .el-icon { width: 1.3em; height: 1.3em; }
+
+/* Home, lobby and the tutorial sit on glass too, so their text reads over the cave. */
+.setup {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(6, 18, 17, 0.78);
+  border: 1px solid rgba(217, 174, 82, 0.35);
+  border-radius: 18px;
+  backdrop-filter: blur(4px);
+}
+
+/* The tutorial window: no blur here. A blur on it would move the hit effects drawn inside it out of place. */
+#help {
+  background: linear-gradient(180deg, rgba(12, 34, 32, 0.98), rgba(6, 19, 18, 0.98));
+  border: 1.5px solid rgba(217, 174, 82, 0.6);
+  border-radius: 14px;
+  box-shadow: 0 0 24px rgba(217, 174, 82, 0.25);
+}
+
+.tut-board {
+  background: rgba(4, 14, 12, 0.6);
+  border: 1px solid rgba(217, 174, 82, 0.35);
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action.power { transition: none; }
+  .action.power:hover { transform: none; }
+}
+
+@media (max-width: 620px) {
+  .clock.on { width: 200px; height: 115px; padding-top: 20px; font-size: 2.7rem;
+    background: url('art/board/medallion.webp') center / contain no-repeat, radial-gradient(circle 49px at 50% 47%, rgba(4, 16, 12, 0.94) 98%, transparent 100%); }
+  .clock.on::after { font-size: 0.62rem; }
+  .action.power { min-width: 0; padding: 0.5rem 0.9rem 0.6rem; font-size: 1rem; }
+  .topline h2 { font-size: 1.5rem; }
 }

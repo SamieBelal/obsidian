@@ -107,6 +107,7 @@
     for (const el of PAINTED) for (let p = 1; p <= 6; p++) new Image().src = `${DIR}${el}-${p}.webp`;
     new Image().src = `${DIR}back.webp`;
     for (const key of POWERS) new Image().src = `art/powers/${key}.webp`;
+    for (const name of ['cave', 'medallion', 'corner', 'icon-fire', 'icon-water', 'icon-earth']) new Image().src = `art/board/${name}.webp`;
   }
 
   root.PXArt = { cardArt, cardBack, powerArt, COLORS };

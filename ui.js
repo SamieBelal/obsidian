@@ -23,6 +23,8 @@
   let fxLayer = null;
 
   const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+  // The painted icon for an element, from art/board.
+  const icon = (el) => (['fire', 'water', 'earth'].includes(el) ? `<img class="el-icon" src="art/board/icon-${el}.webp" alt="" draggable="false">` : '');
   const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const roomFromUrl = () => (new URLSearchParams(location.search).get('room') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
@@ -401,7 +403,7 @@
 
   function hpMeter(p) {
     const hp = animating() ? session.fx.shown[p.index] : p.hp;
-    return `<div class="meter" data-hp-for="${p.index}"><span class="hp-number">${hp}</span><span class="hp-bar"><span style="width:${(hp / CONFIG.maxHp) * 100}%"></span></span>${pips(p.charge)}</div>`;
+    return `<div class="meter" data-hp-for="${p.index}"><span class="hp-label"><span class="hp-number">${hp}</span> HP</span><span class="hp-bar"><span style="width:${(hp / CONFIG.maxHp) * 100}%"></span></span>${pips(p.charge)}</div>`;
   }
 
   function abilityLine(s, a) {
@@ -429,7 +431,7 @@
     const targetable = session.pick && session.pick.mode === 'target' && p.alive;
     const tag = targetable ? 'button' : 'div';
     return `<${tag} class="seat el-${p.element} ${p.alive ? '' : 'out'}${powerClasses(p)}" data-seat="${p.index}" ${targetable ? `data-target="${p.index}"` : ''}>
-      <span class="who">${esc(p.name)}<span class="class">${SUBS[p.sub].name}</span></span>
+      <span class="who">${icon(p.element)}<span class="who-text">${esc(p.name)}<span class="class">${SUBS[p.sub].name}</span></span></span>
       <span class="showing">${p.faceUp && s.stage !== 'over' ? `<span class="card" title="Showing ${p.faceUp.el} ${p.faceUp.power}">${cardArt(p.faceUp.el, p.faceUp.power)}</span>` : ''}</span>
       ${hpMeter(p)}
       <span class="state">${p.call ? `<span class="call-tag el-${p.call}">Calling ${p.call}</span> ` : ''}${notes.join(', ')}</span>
@@ -482,7 +484,7 @@
       const record = p.callsMade ? `kept ${p.callsKept} of ${p.callsMade}` : 'first call';
       return `<div class="call ${p.call ? `el-${p.call}` : 'no-call'} ${fresh ? 'pop' : ''}" style="animation-delay:${n * 140}ms">
         <span class="call-who">${nameOf(s, p.index)}</span>
-        <span class="call-el">${p.call ? cap(p.call) : 'No call'}</span>
+        <span class="call-el">${p.call ? `${icon(p.call)}${cap(p.call)}` : 'No call'}</span>
         <span class="call-record">${record}</span>
       </div>`;
     }).join('');
@@ -538,13 +540,13 @@
       case 'call': {
         const forcedNote = view.forcedId ? ' You are being bloodbent, so you must play the marked card, but you can still lie about it.' : '';
         return `${story}${knowledgeHtml(s)}<p class="prompt">Call an element for everyone to see.<small>You can lie. Play what you call for +${CONFIG.callBonus} charge.${forcedNote}</small></p>
-          <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-call="${el}">Call ${el}</button>`).join('')}</div>`;
+          <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-call="${el}">${icon(el)}<span>Call ${cap(el)}</span></button>`).join('')}</div>`;
       }
       case 'card':
         return `${callsHtml(s)}${story}${knowledgeHtml(s)}<p class="prompt">${view.myCall ? `You called ${view.myCall}. ` : ''}Choose a card to play.</p>`;
       case 'vote':
         return `${story}<p class="prompt">You are in the Spirit World. Vote for an element to get +1 power this round.</p>
-          <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-vote="${el}">${cap(el)}</button>`).join('')}</div>`;
+          <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-vote="${el}">${icon(el)}<span>${cap(el)}</span></button>`).join('')}</div>`;
       default: {
         const forced = view.forcedId && view.phase === 'cards' ? '<p class="prompt">You are being bloodbent, so you must play the marked card.</p>' : '';
         return `${callsHtml(s)}${story}${knowledgeHtml(s)}${forced}<p class="prompt"><small>${waitingText(s)}</small></p>`;
@@ -590,7 +592,7 @@
         <div class="middle"><div class="clock" id="countdown" aria-hidden="true"></div><div class="middle-body" aria-live="polite">${middleHtml(s)}</div></div>
         <div class="mine">
           <div class="me-line el-${me.element}${powerClasses(me)}" data-seat="${s.me}">
-            <span class="who">${sub.name}</span>
+            <span class="who">${icon(me.element)}${sub.name}</span>
             ${hpMeter(me)}
             <span class="what">${sub.cost} charge: ${sub.text}</span>
           </div>
