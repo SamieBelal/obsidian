@@ -124,11 +124,32 @@ button:disabled { cursor: not-allowed; }
   overflow: hidden;
 }
 
-.sub-tile .print svg {
+.sub-tile .print svg, .sub-tile .print img {
   display: block;
   width: 100%;
   height: 100%;
 }
+
+/* A centered band of the power's picture, where its burst, bolt or swirl sits. */
+.sub-tile .print img { object-fit: cover; object-position: 50% 42%; }
+
+.power-img { display: block; width: 100%; height: auto; border-radius: 6px; }
+
+.power-offer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 34rem;
+  text-align: left;
+}
+
+.power-offer .prompt { text-align: left; }
+
+.power-card { flex: none; width: 84px; filter: drop-shadow(0 0 10px rgba(255, 190, 90, 0.35)); }
+
+.power-thumb { flex: none; width: 34px; }
+
+.ability-list li { display: flex; align-items: center; gap: 0.7rem; }
 
 .sub-tile .words { padding: 0.65rem 0.75rem 0.8rem; }
 

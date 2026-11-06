@@ -96,11 +96,18 @@
     return `<img class="card-img" src="${DIR}back.webp" alt="" draggable="false">`;
   }
 
+  // The painted picture for a sub-element, such as Lightning. Only fire, water and earth powers have one.
+  const POWERS = ['combustion', 'lightning', 'seismic', 'metal', 'healing', 'bloodbending'];
+  function powerArt(key) {
+    return POWERS.includes(key) ? `<img class="power-img" src="art/powers/${key}.webp" alt="" draggable="false">` : '';
+  }
+
   // Load every card up front, so cards never pop in blank when they flip over.
   if (typeof Image !== 'undefined') {
     for (const el of PAINTED) for (let p = 1; p <= 6; p++) new Image().src = `${DIR}${el}-${p}.webp`;
     new Image().src = `${DIR}back.webp`;
+    for (const key of POWERS) new Image().src = `art/powers/${key}.webp`;
   }
 
-  root.PXArt = { cardArt, cardBack, COLORS };
+  root.PXArt = { cardArt, cardBack, powerArt, COLORS };
 })(typeof self !== 'undefined' ? self : this);

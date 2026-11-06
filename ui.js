@@ -1,7 +1,7 @@
 // The screens. They only draw what the room sends, whether the room is in this tab or a friend's.
 (function () {
   const { SUBS, CONFIG } = PX;
-  const { cardArt, cardBack } = PXArt;
+  const { cardArt, cardBack, powerArt } = PXArt;
   const app = document.getElementById('app');
 
   const session = {
@@ -352,7 +352,7 @@
           ${subs.map((key) => {
             const sub = SUBS[key];
             return `<button class="sub-tile el-${sub.element}" data-sub="${key}" aria-pressed="${key === s.myPick}">
-              <span class="print">${cardArt(sub.element, sub.cost >= 4 ? 6 : 3, false)}</span>
+              <span class="print">${powerArt(key) || cardArt(sub.element, sub.cost >= 4 ? 6 : 3, false)}</span>
               <span class="words">
                 <h3>${sub.name}</h3>
                 <span class="cost">${cap(sub.element)}, ${sub.cost} charge</span>
@@ -530,7 +530,7 @@
     }
     switch (s.needs) {
       case 'ability':
-        return `<p class="prompt">You have ${me.charge} charge. Use ${sub.name} this round?<small>${sub.text}</small></p>
+        return `<div class="power-offer"><span class="power-card">${powerArt(me.sub)}</span><p class="prompt">You have ${me.charge} charge. Use ${sub.name} this round?<small>${sub.text}</small></p></div>
           <div class="buttons el-${me.element}">
             <button class="action power" id="use">Use ${sub.name} (${sub.cost} charge)</button>
             <button class="action quiet" id="hold">Hold your charge</button>

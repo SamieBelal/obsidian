@@ -2,7 +2,7 @@
 // Damage and abilities come from the engine, so what it shows can't drift from the real game.
 (function () {
   const { CONFIG, BEATS, SUBS, matchupDamage, subsFor } = PX;
-  const { cardArt, cardBack } = PXArt;
+  const { cardArt, cardBack, powerArt } = PXArt;
   const KEY = 'px-seen-help';
   const dialog = document.getElementById('help');
   let step = 0;
@@ -13,7 +13,6 @@
   const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
   const card = (c) => `<span class="card">${cardArt(c.el, c.power)}</span>`;
   const damage = (a, b) => matchupDamage(3, a, b);
-  const dot = (el) => `<span class="el-dot" style="--el: var(--${el})"></span>`;
 
   function choices(hand) {
     return `<div class="tap-row">${hand.map((c, n) => `<button class="card" data-choice="${n}" aria-label="${cap(c.el)} ${c.power}">${cardArt(c.el, c.power)}</button>`).join('')}</div>`;
@@ -144,7 +143,7 @@
         <p class="ask">Before the game, everyone secretly picks one. It gives you a power and makes that element <strong>your element</strong>.</p>
         <ul class="ability-list">${subsFor(3).map((key) => {
           const sub = SUBS[key];
-          return `<li>${dot(sub.element)}<strong>${sub.name}</strong> (${sub.cost} charge): ${sub.text}</li>`;
+          return `<li><span class="power-thumb">${powerArt(key)}</span><span><strong>${sub.name}</strong> (${cap(sub.element)}, ${sub.cost} charge): ${sub.text}</span></li>`;
         }).join('')}</ul>`,
     },
     {
