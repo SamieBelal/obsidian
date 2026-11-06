@@ -1,5 +1,6 @@
-// Placeholder card art: flat woodblock-style prints with no faces or figures.
-// Each pattern gets denser and more intense as the card's power rises.
+// Card art. Fire, water and earth use the painted cards in art/cards. Each one already shows its number,
+// so a small number badge only appears on tiny cards, where the painted one is too small to read (see style.css).
+// Any other element falls back to the drawn woodblock-style prints below, which get denser as power rises.
 (function (root) {
   const COLORS = {
     fire: { ground: '#7E1D16', mid: '#D9411E', top: '#F6A623', ink: '#FFF3DC' },
@@ -73,7 +74,17 @@
 
   const PATTERNS = { fire: flames, water: waves, earth: strata, air: currents };
 
+  const PAINTED = ['fire', 'water', 'earth'];
+  const DIR = 'art/cards/';
+
   function cardArt(el, power, showNumber = true) {
+    if (PAINTED.includes(el)) {
+      return `<img class="card-img" src="${DIR}${el}-${power}.webp" alt="" draggable="false">${showNumber ? `<span class="card-num" aria-hidden="true">${power}</span>` : ''}`;
+    }
+    return drawnArt(el, power, showNumber);
+  }
+
+  function drawnArt(el, power, showNumber) {
     const c = COLORS[el];
     const number = showNumber
       ? `<text x="9" y="31" font-size="30" fill="${c.ink}" stroke="${el === 'air' ? '#CFE3DC' : c.ground}" stroke-width="5" paint-order="stroke" class="card-number">${power}</text>`
@@ -82,11 +93,13 @@
   }
 
   function cardBack() {
-    let lines = '';
-    for (let n = -140; n < 110; n += 12) {
-      lines += `<path d="M${n} 140 L${n + 140} 0" stroke="#7B5E8A" stroke-width="3"/>`;
-    }
-    return `<svg viewBox="0 0 100 140" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><rect width="100" height="140" fill="#46304F"/>${lines}</svg>`;
+    return `<img class="card-img" src="${DIR}back.webp" alt="" draggable="false">`;
+  }
+
+  // Load every card up front, so cards never pop in blank when they flip over.
+  if (typeof Image !== 'undefined') {
+    for (const el of PAINTED) for (let p = 1; p <= 6; p++) new Image().src = `${DIR}${el}-${p}.webp`;
+    new Image().src = `${DIR}back.webp`;
   }
 
   root.PXArt = { cardArt, cardBack, COLORS };
