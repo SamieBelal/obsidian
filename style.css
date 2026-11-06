@@ -169,20 +169,6 @@ button:disabled { cursor: not-allowed; }
   color: var(--ink);
 }
 
-.air-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 3rem;
-  cursor: pointer;
-}
-
-.air-toggle input {
-  width: 1.2rem;
-  height: 1.2rem;
-  accent-color: var(--air);
-}
-
 .options .action {
   margin-left: auto;
   padding: 0.85rem 2rem;
@@ -359,6 +345,7 @@ button.seat:hover { background: #55416A; }
 }
 
 .play {
+  position: relative;
   width: clamp(68px, 13vw, 104px);
   font-size: 0.9rem;
   line-height: 1.25;
@@ -854,11 +841,176 @@ button.seat:hover { background: #55416A; }
   font: 400 1.5rem/1 var(--display);
 }
 
+.tut-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: var(--table);
+  border-radius: 6px;
+}
+
+.help-body .tut-board { margin: 0.6rem 0; }
+
+.tut-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.tut-name { font-weight: 700; }
+
+.tut-you .tut-name { text-decoration: underline; text-underline-offset: 3px; }
+
+.help-body .tut-seat .card { width: 72px; }
+
+.tut-result { min-height: 3em; font-size: 0.9rem; line-height: 1.3; color: var(--soft); }
+
+.tut-result strong { display: block; font-size: 1rem; }
+
+.tut-seat { position: relative; }
+
+/* Hit effects */
+
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.fx-crack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.fx-dmg {
+  position: absolute;
+  top: 40%;
+  z-index: 11;
+  font: 400 2.3rem/1 var(--display);
+  color: #FFFFFF;
+  -webkit-text-stroke: 2px #5A0F0A;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 #5A0F0A, 0 0 18px #FF5A2A;
+  pointer-events: none;
+}
+
+.fx-dmg.fx-blocked {
+  font-size: 1.3rem;
+  color: #EEF2F5;
+  -webkit-text-stroke: 2px #39424C;
+  text-shadow: 0 2px 0 #39424C, 0 0 14px #C9D3DD;
+}
+
+/* The calls, shown while cards are chosen */
+
+.calls { margin: 0 auto 1.1rem; text-align: center; }
+
+.calls h3 {
+  margin-bottom: 0.55rem;
+  font: 400 1rem/1.2 var(--display);
+  letter-spacing: 0.04em;
+  color: var(--soft);
+}
+
+.call-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  perspective: 600px;
+}
+
+.call {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 7.5rem;
+  padding: 0.55rem 0.9rem 0.6rem;
+  background: var(--raised);
+  border-top: 5px solid var(--el, var(--line));
+  border-radius: 6px;
+}
+
+.call-who { font-weight: 700; }
+
+.call-el { font: 400 1.6rem/1.1 var(--display); color: var(--el); }
+
+.call.no-call .call-el { font-size: 1.1rem; color: var(--soft); }
+
+.call-record { font-size: 0.8rem; color: var(--soft); }
+
+.call.pop { animation: call-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) backwards; }
+
+@keyframes call-pop {
+  from { opacity: 0; transform: rotateX(85deg) scale(0.6); }
+}
+
+.call-tag {
+  display: inline-block;
+  padding: 0 0.45rem;
+  border-radius: 3px;
+  background: var(--el);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call.pop { animation: none; }
+}
+
+/* Sub-element powers */
+
+.fx-label {
+  position: fixed;
+  z-index: 11;
+  font: 400 1.35rem/1 var(--display);
+  white-space: nowrap;
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 var(--ink);
+  pointer-events: none;
+}
+
+/* Combustion is ready: the seat smoulders until the boosted fire card is played. */
+.fx-primed { animation: ember 1.2s ease-in-out infinite alternate; }
+
+@keyframes ember {
+  from { box-shadow: 0 0 0 2px #E4512B, 0 0 10px rgba(228, 81, 43, 0.4); }
+  to { box-shadow: 0 0 0 2px #FFB13B, 0 0 22px rgba(255, 177, 59, 0.65); }
+}
+
+/* Metalbending is up: the seat is plated in steel. */
+.fx-shielded {
+  outline: 3px double #C9D3DD;
+  outline-offset: 2px;
+  background-image: linear-gradient(135deg, rgba(227, 232, 238, 0.12), rgba(124, 135, 148, 0.04));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-primed { animation: none; box-shadow: 0 0 0 2px #FF7A1A; }
+}
+
+.board-note { margin: 0.2rem 0 0; font-weight: 600; text-align: center; }
+
+.ability-list strong { color: var(--bone); }
+
 @media (prefers-reduced-motion: reduce) {
   .help-body .tap-row .card { transition: none; }
 }
 
 @media (max-width: 620px) {
   .triangle { width: min(225px, 100%); }
+  .tut-board { grid-template-columns: repeat(2, 1fr); }
   .help-body { min-height: 0; }
 }

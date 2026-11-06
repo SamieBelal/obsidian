@@ -56,14 +56,9 @@ If everyone remaining falls in the same round, whoever had the most HP before th
 
 Abilities that land in the same round resolve in this order: Metalbending, Bloodbending, Seismic Sense, Combustion, Healing, Lightning.
 
-## Optional: air
+## Air
 
-Air adds a fourth element and changes the cycle: water beats fire, fire beats air, air beats earth, earth beats water. Water and air ignore each other, and so do fire and earth, whatever the numbers. Decks grow to 24 cards.
-
-| Sub-element | Element | Cost | Ability |
-|---|---|---|---|
-| Flight | Air | 2 | Take half damage this round |
-| Vacuum | Air | 4 | One player's card deals no damage this round |
+Air is switched off while its rules are being rethought.
 
 ## Running it
 

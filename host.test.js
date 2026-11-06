@@ -219,13 +219,16 @@ test('the host can return to the lobby for another game, and missing players los
   assert.strictEqual(t.latest('b').screen, 'game');
 });
 
-test('turning air off clears any air picks', () => {
+test('air is switched off: it cannot be turned on, and air sub-elements cannot be picked', () => {
   const t = setup();
   lobbyOfThree(t);
+  const last = (token) => t.inbox[token][t.inbox[token].length - 1];
   t.room.action('a', { type: 'air', on: true });
+  assert.strictEqual(last('a').type, 'error');
   t.room.action('b', { type: 'pick', sub: 'flight' });
-  t.room.action('a', { type: 'air', on: false });
-  assert.strictEqual(t.latest('b').myPick, null);
+  assert.strictEqual(last('b').type, 'error');
+  assert.strictEqual(t.latest('b').myPick, 'healing');
+  assert.strictEqual(t.latest('a').elementCount, 3);
 });
 
 test('two friends can play a full 1v1, and one player with a bot can too', () => {

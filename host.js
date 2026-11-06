@@ -17,7 +17,8 @@
 
   function createRoom({ code = null, send, timers = DEFAULT_TIMERS, rng = Math.random, setTimer = setTimeout, clearTimer = clearTimeout, now = Date.now }) {
     const seats = [];
-    let elementCount = 3;
+    // Air (a fourth element) is switched off while its rules are being rethought. The engine still supports it.
+    const elementCount = 3;
     let game = null;
     let stage = 'lobby'; // lobby | playing | reveal | over
     let report = null;
@@ -203,9 +204,6 @@
         seats[i].sub = action.sub;
       } else if (i !== 0) {
         throw new Error('Only the host can do that');
-      } else if (action.type === 'air') {
-        elementCount = action.on ? 4 : 3;
-        seats.forEach((s) => { if (s.sub && !validSubs().includes(s.sub)) s.sub = null; });
       } else if (action.type === 'addBot') {
         addBot();
       } else if (action.type === 'removeBot') {

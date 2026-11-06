@@ -14,7 +14,13 @@
     pick: null, // the player's half-finished ability choice
     flippedRound: null,
     deadline: null,
+    lastHp: {}, // each player's HP before the round being revealed
+    fx: null, // the reveal animation: { round, playing, shown, final }
+    abilityFx: null, // the abilities animation: { round, playing }
+    callsRound: null, // the round whose calls have already popped in
   };
+
+  let fxLayer = null;
 
   const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
   const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -64,14 +70,128 @@
     session.mode = 'room';
     session.message = '';
     session.deadline = state.secondsLeft === null || state.secondsLeft === undefined ? null : Date.now() + state.secondsLeft * 1000;
+    // A new round (or a new game) ends any reveal animation still playing.
+    if (state.screen !== 'game' || state.stage === 'playing') {
+      if (session.fx && fxLayer) fxLayer.clear();
+      session.fx = null;
+    }
+    if (state.screen !== 'game' || state.stage !== 'playing') session.abilityFx = null;
+    if (state.screen !== 'game') session.callsRound = null;
+    if (state.screen === 'game' && state.stage === 'playing') {
+      session.lastHp = Object.fromEntries(state.view.players.map((p) => [p.index, p.hp]));
+    }
+    // While the hits are playing, hold later updates so the screen isn't redrawn mid-animation.
+    if (session.fx && session.fx.playing && state.report && state.report.round === session.fx.round) return;
+    if (abilitiesPlaying() && state.view.round === session.abilityFx.round && state.view.phase !== 'abilities') return;
+    const startFx = shouldAnimate(state);
+    const startAbilities = shouldAnimateAbilities(state);
+    render();
+    if (startFx) playReveal();
+    if (startAbilities) playAbilities();
+  }
+
+  // Abilities animation: once abilities lock in, each one plays on the seats, a beat apart.
+
+  function shouldAnimateAbilities(state) {
+    if (state.screen !== 'game' || state.stage !== 'playing') return false;
+    const view = state.view;
+    if (view.phase === 'abilities' || !view.abilities.length) return false;
+    if (session.abilityFx && session.abilityFx.round === view.round) return false;
+    const motion = window.PXFx && typeof gsap !== 'undefined' && !PXFx.reducedMotion();
+    session.abilityFx = { round: view.round, playing: motion };
+    return motion;
+  }
+
+  async function playAbilities() {
+    const fx = session.abilityFx;
+    if (!fxLayer) fxLayer = PXFx.createLayer(document.body);
+    const seatOf = (i) => app.querySelector(`[data-seat="${i}"]`);
+    await Promise.all(session.state.view.abilities.map((a, n) => new Promise((r) => setTimeout(r, n * 450)).then(() => {
+      if (session.abilityFx !== fx || !seatOf(a.player)) return null;
+      return PXFx.ability(fxLayer, document.body, a.sub, seatOf(a.player), a.target === null ? null : seatOf(a.target));
+    })));
+    if (session.abilityFx !== fx) return;
+    fx.playing = false;
     render();
   }
+
+  const abilitiesPlaying = () => !!(session.abilityFx && session.abilityFx.playing);
+
+  // The lasting look of an active power on a seat: Combustion glows, Metalbending is plated.
+  function powerClasses(p) {
+    if (abilitiesPlaying()) return '';
+    return `${p.primed ? ' fx-primed' : ''}${p.shield > 0 ? ' fx-shielded' : ''}`;
+  }
+
+  // Reveal animation
+
+  // Starts the hits for a newly revealed round, unless the player prefers less motion.
+  function shouldAnimate(state) {
+    if (state.screen !== 'game' || !state.report || (state.stage !== 'reveal' && state.stage !== 'over')) return false;
+    if (session.fx && session.fx.round === state.report.round) return false;
+    const report = state.report;
+    const anyHit = report.plays.some((p) => report.damageFrom[p.player].length) || report.abilities.some((a) => a.sub === 'lightning');
+    if (!window.PXFx || typeof gsap === 'undefined' || PXFx.reducedMotion() || !anyHit) {
+      session.fx = { round: report.round, playing: false };
+      return false;
+    }
+    const final = Object.fromEntries(state.view.players.map((p) => [p.index, p.hp]));
+    const before = (i) => (session.lastHp[i] !== undefined ? session.lastHp[i] : Math.min(CONFIG.maxHp, final[i] + (report.damage[i] || 0)));
+    session.fx = {
+      round: report.round,
+      playing: true,
+      final,
+      shown: Object.fromEntries(state.view.players.map((p) => [p.index, before(p.index)])),
+    };
+    return true;
+  }
+
+  // Each attacker's hits fly together, one attacker after another, in seat order.
+  async function playReveal() {
+    const fx = session.fx;
+    const report = session.state.report;
+    if (!fxLayer) fxLayer = PXFx.createLayer(document.body);
+    // Let the cards finish flipping over first.
+    await new Promise((r) => setTimeout(r, 450 + report.plays.length * 90));
+    const cardOf = (i) => app.querySelector(`.reveal [data-play="${i}"] .card`);
+    for (const play of report.plays) {
+      if (session.fx !== fx || !cardOf(play.player)) break;
+      const targets = report.plays.map((t) => {
+        const hit = report.damageFrom[t.player].find((h) => h.player === play.player);
+        if (!hit) return null;
+        const blocked = report.blocked.includes(t.player);
+        return { card: cardOf(t.player), amount: hit.amount, blocked, onHit: () => { if (!blocked) showHit(fx, t.player, hit.amount); } };
+      }).filter(Boolean);
+      if (targets.length) await PXFx.attack(fxLayer, cardOf(play.player), play.card.el, targets);
+    }
+    // Lightning strikes after the cards.
+    for (const bolt of report.abilities.filter((a) => a.sub === 'lightning')) {
+      if (session.fx !== fx || !cardOf(bolt.target)) break;
+      const blocked = report.blocked.includes(bolt.target);
+      await PXFx.strike(fxLayer, cardOf(bolt.target), SUBS.lightning.amount, blocked);
+      if (!blocked) showHit(fx, bolt.target, SUBS.lightning.amount);
+    }
+    if (session.fx !== fx) return;
+    fx.playing = false;
+    render();
+  }
+
+  // Lowers a player's HP bar as a hit lands, never below where it really ends up.
+  function showHit(fx, i, amount) {
+    fx.shown[i] = Math.max(fx.final[i], fx.shown[i] - amount);
+    app.querySelectorAll(`[data-hp-for="${i}"]`).forEach((meter) => {
+      meter.querySelector('.hp-number').textContent = fx.shown[i];
+      meter.querySelector('.hp-bar span').style.width = `${(fx.shown[i] / CONFIG.maxHp) * 100}%`;
+    });
+  }
+
+  const animating = () => !!(session.fx && session.fx.playing && session.state.report && session.state.report.round === session.fx.round);
 
   // Ways into a room
 
   function playSolo(bots) {
     const token = 'solo';
-    const room = PXHost.createRoom({ send: (_t, s) => receive(s), timers: null });
+    const room = PXHost.createRoom({ send: (_t, s) => receive(s) });
     session.send = (action) => room.action(token, action);
     room.join(token, 'You');
     for (let n = 0; n < bots; n++) room.addBot();
@@ -242,7 +362,6 @@
           }).join('')}
         </div>
         ${s.isHost ? `<div class="options">
-          <label class="air-toggle"><input type="checkbox" id="air" ${s.elementCount === 4 ? 'checked' : ''}> Add air as a fourth element</label>
           <button class="action" id="start" ${s.blockers.length ? 'disabled' : ''}>Start game</button>
         </div>
         ${s.blockers.length ? `<p class="hint end">${esc(s.blockers.join('. '))}.</p>` : ''}` : '<p class="hint">The host starts the game once everyone has chosen.</p>'}
@@ -253,7 +372,6 @@
     const on = (id, fn, event = 'click') => { const el = document.getElementById(id); if (el) el.addEventListener(event, fn); };
     on('add-bot', () => session.send({ type: 'addBot' }));
     on('start', () => session.send({ type: 'start' }));
-    on('air', (e) => session.send({ type: 'air', on: e.target.checked }), 'change');
     on('copy', async (e) => {
       const button = e.target;
       try {
@@ -282,7 +400,8 @@
   }
 
   function hpMeter(p) {
-    return `<div class="meter"><span>${p.hp}</span><span class="hp-bar"><span style="width:${(p.hp / CONFIG.maxHp) * 100}%"></span></span>${pips(p.charge)}</div>`;
+    const hp = animating() ? session.fx.shown[p.index] : p.hp;
+    return `<div class="meter" data-hp-for="${p.index}"><span class="hp-number">${hp}</span><span class="hp-bar"><span style="width:${(hp / CONFIG.maxHp) * 100}%"></span></span>${pips(p.charge)}</div>`;
   }
 
   function abilityLine(s, a) {
@@ -306,15 +425,14 @@
     if (s.offline.includes(p.index)) notes.push('Disconnected');
     if (p.shield > 0) notes.push('Blocking');
     if (p.primed) notes.push('Combustion ready');
-    if (p.call) notes.push(`Calling ${p.call}`);
     if (p.callsMade && p.alive) notes.push(`kept ${p.callsKept} of ${p.callsMade} calls`);
     const targetable = session.pick && session.pick.mode === 'target' && p.alive;
     const tag = targetable ? 'button' : 'div';
-    return `<${tag} class="seat el-${p.element} ${p.alive ? '' : 'out'}" ${targetable ? `data-target="${p.index}"` : ''}>
+    return `<${tag} class="seat el-${p.element} ${p.alive ? '' : 'out'}${powerClasses(p)}" data-seat="${p.index}" ${targetable ? `data-target="${p.index}"` : ''}>
       <span class="who">${esc(p.name)}<span class="class">${SUBS[p.sub].name}</span></span>
       <span class="showing">${p.faceUp && s.stage !== 'over' ? `<span class="card" title="Showing ${p.faceUp.el} ${p.faceUp.power}">${cardArt(p.faceUp.el, p.faceUp.power)}</span>` : ''}</span>
       ${hpMeter(p)}
-      <span class="state">${notes.join(', ')}</span>
+      <span class="state">${p.call ? `<span class="call-tag el-${p.call}">Calling ${p.call}</span> ` : ''}${notes.join(', ')}</span>
     </${tag}>`;
   }
 
@@ -342,13 +460,33 @@
       const from = math ? `<span class="from">${math}</span>` : '';
       const called = report.calls[play.player];
       const truth = called ? `<span class="from">${called === play.card.el ? `Called ${called}, kept it` : `Called ${called}, bluffed`}</span>` : '';
-      return `<div class="play">
+      const results = animating() ? '<span class="damage">&nbsp;</span>' : `${label}${from}${truth}`;
+      return `<div class="play" data-play="${play.player}">
         <span class="card ${animate ? 'flip' : ''}" style="animation-delay:${order * 90}ms">${cardArt(play.card.el, play.card.power)}</span>
-        ${nameOf(s, play.player)}${label}${from}${truth}
+        ${nameOf(s, play.player)}${results}
       </div>`;
     }).join('');
-    const story = roundStory(s, report).map((line) => `<li>${line}</li>`).join('');
-    return `<div class="reveal">${plays}</div>${story ? `<ul class="story">${story}</ul>` : ''}`;
+    const story = animating() ? '' : roundStory(s, report).map((line) => `<li>${line}</li>`).join('');
+    return `<div class="reveal" data-fx-shake>${plays}</div>${story ? `<ul class="story">${story}</ul>` : ''}`;
+  }
+
+  // Everyone's call, big and in color, with how often they've kept their word.
+  function callsHtml(s) {
+    const view = s.view;
+    if (view.phase !== 'cards') return '';
+    const alive = view.players.filter((p) => p.alive);
+    const order = alive.filter((p) => p.index !== s.me).concat(alive.filter((p) => p.index === s.me));
+    const fresh = session.callsRound !== view.round;
+    session.callsRound = view.round;
+    const tiles = order.map((p, n) => {
+      const record = p.callsMade ? `kept ${p.callsKept} of ${p.callsMade}` : 'first call';
+      return `<div class="call ${p.call ? `el-${p.call}` : 'no-call'} ${fresh ? 'pop' : ''}" style="animation-delay:${n * 140}ms">
+        <span class="call-who">${nameOf(s, p.index)}</span>
+        <span class="call-el">${p.call ? cap(p.call) : 'No call'}</span>
+        <span class="call-record">${record}</span>
+      </div>`;
+    }).join('');
+    return `<div class="calls"><h3>The calls</h3><div class="call-row">${tiles}</div></div>`;
   }
 
   function knowledgeHtml(s) {
@@ -371,6 +509,7 @@
     const lines = view.abilities.map((a) => `<li>${abilityLine(s, a)}</li>`).join('');
     const story = lines ? `<ul class="story">${lines}</ul>` : '';
 
+    if (animating()) return revealHtml(s, s.report);
     if (s.stage === 'over') {
       const iWon = s.winners.includes(s.me);
       const others = s.winners.filter((i) => i !== s.me).map((i) => esc(view.players[i].name));
@@ -402,13 +541,13 @@
           <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-call="${el}">Call ${el}</button>`).join('')}</div>`;
       }
       case 'card':
-        return `${story}${knowledgeHtml(s)}<p class="prompt">${view.myCall ? `You called ${view.myCall}. ` : ''}Choose a card to play.</p>`;
+        return `${callsHtml(s)}${story}${knowledgeHtml(s)}<p class="prompt">${view.myCall ? `You called ${view.myCall}. ` : ''}Choose a card to play.</p>`;
       case 'vote':
         return `${story}<p class="prompt">You are in the Spirit World. Vote for an element to get +1 power this round.</p>
           <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-vote="${el}">${cap(el)}</button>`).join('')}</div>`;
       default: {
         const forced = view.forcedId && view.phase === 'cards' ? '<p class="prompt">You are being bloodbent, so you must play the marked card.</p>' : '';
-        return `${story}${knowledgeHtml(s)}${forced}<p class="prompt"><small>${waitingText(s)}</small></p>`;
+        return `${callsHtml(s)}${story}${knowledgeHtml(s)}${forced}<p class="prompt"><small>${waitingText(s)}</small></p>`;
       }
     }
   }
@@ -451,7 +590,7 @@
         <div class="seats">${rivals.map((p) => seatHtml(s, p)).join('')}</div>
         <div class="middle" aria-live="polite">${middleHtml(s)}</div>
         <div class="mine">
-          <div class="me-line el-${me.element}">
+          <div class="me-line el-${me.element}${powerClasses(me)}" data-seat="${s.me}">
             <span class="who">${sub.name}</span>
             ${hpMeter(me)}
             <span class="what">${sub.cost} charge: ${sub.text}</span>

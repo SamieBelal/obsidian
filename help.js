@@ -1,19 +1,22 @@
-// The how-to-play walkthrough: one idea per screen, learned by tapping cards.
-// Damage comes from the engine, so what it shows can't drift from the real game.
+// The how-to-play walkthrough: one idea per screen, basics first, then powers, then the extras.
+// Damage and abilities come from the engine, so what it shows can't drift from the real game.
 (function () {
-  const { CONFIG, BEATS, matchupDamage } = PX;
-  const { cardArt } = PXArt;
+  const { CONFIG, BEATS, SUBS, matchupDamage, subsFor } = PX;
+  const { cardArt, cardBack } = PXArt;
   const KEY = 'px-seen-help';
   const dialog = document.getElementById('help');
   let step = 0;
+  let reveal = 'down'; // the table's cards: 'down', 'playing' or 'done'
+  let runId = 0;
+  let layer = null;
 
   const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-  const name = (c) => `${cap(c.el)} ${c.power}`;
   const card = (c) => `<span class="card">${cardArt(c.el, c.power)}</span>`;
   const damage = (a, b) => matchupDamage(3, a, b);
+  const dot = (el) => `<span class="el-dot" style="--el: var(--${el})"></span>`;
 
   function choices(hand) {
-    return `<div class="tap-row">${hand.map((c, n) => `<button class="card" data-choice="${n}" aria-label="${name(c)}">${cardArt(c.el, c.power)}</button>`).join('')}</div>`;
+    return `<div class="tap-row">${hand.map((c, n) => `<button class="card" data-choice="${n}" aria-label="${cap(c.el)} ${c.power}">${cardArt(c.el, c.power)}</button>`).join('')}</div>`;
   }
 
   // Water, fire and earth around a triangle, with arrows pointing at what each one beats.
@@ -29,8 +32,61 @@
   }
 
   const ELEMENT_HAND = [{ el: 'water', power: 3 }, { el: 'fire', power: 3 }, { el: 'earth', power: 3 }];
-  const LIE_HAND = [{ el: 'earth', power: 5 }, { el: 'water', power: 4 }, { el: 'fire', power: 3 }];
-  const REED_CARD = { el: 'fire', power: 6 };
+  const CALL_HAND = [{ el: 'water', power: 4 }, { el: 'fire', power: 2 }, { el: 'earth', power: 5 }];
+
+  // A four-player table. Each seat's damage is worked out from everyone else's card.
+  const TABLE = [
+    { name: 'You', card: { el: 'fire', power: 4 } },
+    { name: 'Reed', card: { el: 'earth', power: 5 } },
+    { name: 'Mia', card: { el: 'water', power: 2 } },
+    { name: 'Jo', card: { el: 'fire', power: 6 } },
+  ];
+
+  // Who each seat is hit by, worked out by the engine's damage rule.
+  const hitsOn = (seat) => TABLE
+    .filter((other) => other !== seat)
+    .map((other) => ({ name: other.name, amount: damage(other.card, seat.card) }))
+    .filter((h) => h.amount > 0);
+
+  function board() {
+    const seats = TABLE.map((seat, n) => {
+      const hits = hitsOn(seat);
+      const total = hits.reduce((sum, h) => sum + h.amount, 0);
+      const result = reveal !== 'done' ? '<span class="tut-result">&nbsp;</span>'
+        : total ? `<span class="tut-result"><strong class="bad">-${total} HP</strong>${hits.map((h) => `${h.name} ${h.amount}`).join(', ')}</span>`
+          : '<span class="tut-result"><strong class="good">No damage</strong>&nbsp;</span>';
+      return `<li class="tut-seat${seat.name === 'You' ? ' tut-you' : ''}" data-seat="${n}">
+        <span class="tut-name">${seat.name}</span>
+        <span class="card">${reveal === 'down' ? cardBack() : cardArt(seat.card.el, seat.card.power)}</span>
+        ${result}
+      </li>`;
+    }).join('');
+    const foot = reveal === 'down' ? '<button class="action" id="flip">Flip the cards</button>'
+      : reveal === 'done' ? '<p class="board-note">Add up every player who beats you. That\'s your damage.</p><button class="action quiet small" id="flip">Watch again</button>'
+        : '<p class="board-note">&nbsp;</p>';
+    return `<ul class="tut-board" data-fx-shake>${seats}</ul><div class="buttons">${foot}</div>`;
+  }
+
+  // Flip every card, then play each attacker's hits in turn: all of one player's hits fly together.
+  async function playReveal() {
+    const run = ++runId;
+    reveal = 'playing';
+    render();
+    if (PXFx.reducedMotion() || typeof gsap === 'undefined') { reveal = 'done'; render(); return; }
+    const cardOf = (n) => dialog.querySelector(`[data-seat="${n}"] .card`);
+    await gsap.fromTo(dialog.querySelectorAll('.tut-seat .card'), { rotationY: 90, transformPerspective: 600 }, { rotationY: 0, duration: 0.28, stagger: 0.07, ease: 'back.out(2)' });
+    for (const [n, seat] of TABLE.entries()) {
+      if (run !== runId) return;
+      const targets = TABLE
+        .map((other, m) => ({ card: cardOf(m), amount: other === seat ? 0 : damage(seat.card, other.card) }))
+        .filter((t) => t.amount > 0);
+      if (!targets.length) continue;
+      await PXFx.attack(layer, cardOf(n), seat.card.el, targets);
+    }
+    if (run !== runId) return;
+    reveal = 'done';
+    render();
+  }
 
   const STEPS = [
     {
@@ -43,64 +99,87 @@
       answer(n) {
         const c = ELEMENT_HAND[n];
         if (BEATS[3][c.el].includes('earth')) return { good: true, text: 'Yes! Fire beats earth.' };
-        if (c.el === 'earth') return { good: false, text: 'Same element, so that one is a tie here. Try again.' };
+        if (c.el === 'earth') return { good: false, text: 'Same element just compares numbers. Find the element that beats earth.' };
         return { good: false, text: 'Earth beats water. Follow the arrows and try again.' };
       },
     },
     {
-      title: 'Higher numbers hit harder',
+      title: 'How much damage',
       body: () => {
         const rows = [
-          [{ el: 'fire', power: 5 }, { el: 'earth', power: 3 }, 'Better element and higher number'],
-          [{ el: 'fire', power: 2 }, { el: 'earth', power: 5 }, 'Better element'],
+          [{ el: 'fire', power: 2 }, { el: 'earth', power: 5 }, 'Better element, whatever the numbers'],
           [{ el: 'fire', power: 5 }, { el: 'fire', power: 3 }, 'Same element, higher number'],
+          [{ el: 'fire', power: 5 }, { el: 'earth', power: 3 }, 'Better element and higher number'],
         ];
         return `<ul class="hits">${rows.map(([a, b, why]) => `<li>
             <span class="pair">${card(a)}<span class="versus">vs</span>${card(b)}</span>
             <span class="hit-text"><strong>${damage(a, b)} damage</strong>${why}</span>
           </li>`).join('')}</ul>
-        <p class="ask">Everyone plays at once, and your card fights all of them.</p>`;
+        <p class="ask">Same element and same number? Nothing happens.</p>`;
       },
     },
     {
-      title: 'People can lie',
+      title: 'Everyone plays at once',
       body: () => `
-        <p class="ask">Before playing, everyone calls an element. <strong>Reed calls water.</strong> What do you play?</p>
-        ${choices(LIE_HAND)}
-        <div class="lie-result" aria-live="polite"></div>`,
-      answer(n) {
-        const mine = LIE_HAND[n];
-        const dealt = damage(mine, REED_CARD);
-        const taken = damage(REED_CARD, mine);
-        const result = dealt ? `You saw through it and deal ${dealt}.`
-          : taken === 2 ? 'Fire beats earth, so you take 2.' : `Same element, but 6 is higher, so you take ${taken}.`;
-        return {
-          good: dealt > 0,
-          reveal: true,
-          text: `Reed lied and played ${name(REED_CARD)}! ${result} Everyone can see how often each player tells the truth.`,
-        };
+        <p class="ask">It's not one on one. Everyone picks a card in secret, they all flip together, and <strong>your card fights every other card</strong>.</p>
+        ${board()}`,
+      mount() {
+        const flip = dialog.querySelector('#flip');
+        if (flip) flip.addEventListener('click', playReveal);
       },
-    },
-    {
-      title: 'Charge up your power',
-      body: () => `
-        <p class="ask">You choose one power before the game, and it belongs to an element. Earn charge, then use it.</p>
-        <ul class="gains">
-          <li><strong>+${CONFIG.chargeForHit}</strong> Play your element and beat someone</li>
-          <li><strong>+${CONFIG.chargeForMiss}</strong> Play your element and beat nobody</li>
-          <li><strong>+${CONFIG.callBonus}</strong> Play the element you called</li>
-        </ul>`,
     },
     {
       title: 'Last one standing wins',
       body: () => `
         <ul class="gains plain">
-          <li>Everyone starts with <strong>${CONFIG.maxHp} HP</strong>.</li>
-          <li><strong>Knocked out?</strong> You vote each round to boost an element.</li>
-          <li><strong>Down to two players?</strong> Damage starts growing, so the game ends fast.</li>
-          <li><strong>Everyone can see one card</strong> in your hand: the newest one.</li>
+          <li>Everyone starts with <strong>${CONFIG.maxHp} HP</strong>. Hit 0 and you're out.</li>
+          <li>You hold <strong>${CONFIG.handSize} cards</strong> and draw one after every round.</li>
+          <li>Your newest card is <strong>face-up</strong>, so everyone can see it.</li>
+          <li><strong>Down to two players?</strong> Damage grows every round, so it ends fast.</li>
+        </ul>`,
+    },
+    {
+      title: 'Pick a sub-element',
+      body: () => `
+        <p class="ask">Before the game, everyone secretly picks one. It gives you a power and makes that element <strong>your element</strong>.</p>
+        <ul class="ability-list">${subsFor(3).map((key) => {
+          const sub = SUBS[key];
+          return `<li>${dot(sub.element)}<strong>${sub.name}</strong> (${sub.cost} charge): ${sub.text}</li>`;
+        }).join('')}</ul>`,
+    },
+    {
+      title: 'Charge up your power',
+      body: () => `
+        <p class="ask">Your power costs charge. You earn it by playing cards of your element:</p>
+        <ul class="gains">
+          <li><strong>+${CONFIG.chargeForHit}</strong> Play your element and beat someone</li>
+          <li><strong>+${CONFIG.chargeForMiss}</strong> Play your element and beat nobody</li>
         </ul>
-        <p class="ask">The fastest way to learn the rest is to play. Tap <strong>How to play</strong> anytime to come back.</p>`,
+        <p class="ask">Once you have enough, you can use it at the start of a round. You can hold up to ${CONFIG.maxCharge} charge.</p>`,
+    },
+    {
+      title: 'Call your element',
+      body: () => `
+        <p class="ask">Each round, before cards, everyone secretly calls an element, then all the calls are shown. Play what you called and get <strong>+${CONFIG.callBonus} charge</strong>. You don't have to, and there's no penalty if you don't.</p>
+        <p class="ask"><strong>You called water.</strong> Tap a card to play.</p>
+        ${choices(CALL_HAND)}
+        <p class="answer" aria-live="polite"></p>`,
+      answer(n) {
+        const c = CALL_HAND[n];
+        if (c.el === 'water') return { good: true, text: `You played what you called: +${CONFIG.callBonus} charge.` };
+        return { good: true, text: 'You played something else. No bonus, and no penalty either.' };
+      },
+    },
+    {
+      title: 'Knocked out? Not done yet',
+      body: () => `
+        <p class="ask">Players who are out go to the <strong>Spirit World</strong>.</p>
+        <ul class="gains plain">
+          <li>Each round, everyone who's out secretly <strong>votes for an element</strong>.</li>
+          <li>The element with the most votes gets <strong>+1</strong> on every card of it that round.</li>
+          <li>A tied vote does nothing.</li>
+        </ul>
+        <p class="ask">That's everything. Tap <strong>How to play</strong> anytime to come back.</p>`,
     },
   ];
 
@@ -118,26 +197,28 @@
         ${step > 0 ? '<button class="action quiet" id="help-back">Back</button>' : '<span></span>'}
         <button class="action" id="help-next">${last ? 'Start playing' : 'Next'}</button>
       </div>`;
+    if (layer) dialog.appendChild(layer.canvas);
+    else if (window.PXFx) layer = PXFx.createLayer(dialog);
     dialog.querySelector('#help-close').addEventListener('click', close);
     dialog.querySelector('#help-next').addEventListener('click', () => {
       if (last) close();
-      else { step += 1; render(); }
+      else { step += 1; resetReveal(); render(); }
     });
     const back = dialog.querySelector('#help-back');
-    if (back) back.addEventListener('click', () => { step -= 1; render(); });
+    if (back) back.addEventListener('click', () => { step -= 1; resetReveal(); render(); });
     dialog.querySelectorAll('[data-choice]').forEach((b) => b.addEventListener('click', () => {
       dialog.querySelectorAll('[data-choice]').forEach((other) => other.classList.toggle('chosen', other === b));
       const result = current.answer(Number(b.dataset.choice));
-      const place = dialog.querySelector('.answer, .lie-result');
-      const reveal = result.reveal ? `<span class="flip-row">${card(LIE_HAND[Number(b.dataset.choice)])}<span class="versus">vs</span>${card(REED_CARD)}</span>` : '';
-      place.innerHTML = `${reveal}<span class="${result.good ? 'good' : 'bad'}">${result.text}</span>`;
+      dialog.querySelector('.answer').innerHTML = `<span class="${result.good ? 'good' : 'bad'}">${result.text}</span>`;
     }));
+    if (current.mount) current.mount();
     dialog.scrollTop = 0;
     dialog.querySelector('#help-title').focus();
   }
 
   function open() {
     step = 0;
+    resetReveal();
     render();
     if (!dialog.open) dialog.showModal();
     dialog.querySelector('#help-title').focus();
@@ -145,7 +226,16 @@
   }
 
   function close() {
+    resetReveal();
     if (dialog.open) dialog.close();
+  }
+
+  // Stops a reveal that's still playing and turns the table's cards back over.
+  function resetReveal() {
+    reveal = 'down';
+    runId += 1;
+    if (window.gsap) gsap.globalTimeline.getChildren().forEach((t) => t.kill());
+    if (layer) layer.clear();
   }
 
   // Opens once for new players, the first time they reach a lobby, while they're waiting anyway.
