@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const PX = require('./engine.js');
-const { createRoom, cleanName } = require('./host.js');
+const { createRoom, cleanName, animationSeconds } = require('./host.js');
 
 function setup(options = {}) {
   const inbox = {};
@@ -17,7 +17,7 @@ function setup(options = {}) {
     setTimer: (fn, ms) => { const t = { fn, ms }; timers.push(t); return t; },
     clearTimer: (t) => { const n = timers.indexOf(t); if (n >= 0) timers.splice(n, 1); },
     now: () => clock,
-    timers: options.timers === undefined ? { abilities: 20, calls: 20, cards: 30, reveal: 30 } : options.timers,
+    timers: options.timers === undefined ? { abilities: 20, calls: 20, cards: 30, reveal: 10 } : options.timers,
   });
   const latest = (token) => {
     const all = (inbox[token] || []).filter((m) => m.type === 'state');
@@ -49,6 +49,9 @@ function actAll(t, tokens) {
     if (s.needs === 'vote') t.room.action(token, { type: 'vote', el: 'water' });
     if (s.needs === 'ready') t.room.action(token, { type: 'ready' });
   }
+  // A timed reveal moves on only when its timer runs out, so run it.
+  const now = t.latest(tokens[0]);
+  if (now && now.stage === 'reveal' && t.timers.length) t.fireTimer();
 }
 
 test('a game cannot start until 2 seats are filled and everyone has chosen', () => {
@@ -171,6 +174,23 @@ test('the timer moves the game on, playing a random card for anyone who did not 
   assert.strictEqual(t.latest('a').stage, 'reveal');
   assert.strictEqual(t.latest('a').report.plays.length, 3);
   t.fireTimer(); // reveal times out
+  assert.strictEqual(t.latest('a').stage, 'playing');
+  assert.strictEqual(t.latest('a').view.round, 2);
+});
+
+test('with timers, the reveal needs no clicks: it waits for the hits to play, then 10 more seconds', () => {
+  const t = setup();
+  lobbyOfThree(t);
+  t.room.action('a', { type: 'start' });
+  t.fireTimer(); // calls time out
+  t.fireTimer(); // cards time out
+  const reveal = t.latest('a');
+  assert.strictEqual(reveal.stage, 'reveal');
+  ['a', 'b', 'c'].forEach((token) => assert.strictEqual(t.latest(token).needs, null, 'nobody has to click Next round'));
+  assert.strictEqual(reveal.secondsLeft, 10 + animationSeconds(reveal.report));
+  t.room.action('a', { type: 'ready' });
+  assert.strictEqual(t.latest('a').stage, 'reveal', 'a stray click does not skip the reveal');
+  t.fireTimer();
   assert.strictEqual(t.latest('a').stage, 'playing');
   assert.strictEqual(t.latest('a').view.round, 2);
 });

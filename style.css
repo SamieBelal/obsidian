@@ -1128,6 +1128,11 @@ body::before {
     var(--table);
 }
 
+/* The face-down back laid over a card until Seismic Sense's reveal flips it. */
+.fx-cover { position: absolute; inset: 0; pointer-events: none; }
+
+.fx-cover .card-img { width: 100%; height: 100%; }
+
 /* Dark glass panels with a glowing edge in the player's element color. */
 .seat, .me-line, .call, .room-code, .way, .sub-tile {
   position: relative;

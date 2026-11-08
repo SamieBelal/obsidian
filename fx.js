@@ -18,9 +18,17 @@
     steel: ['#FFFFFF', '#E3E8EE', '#AEB8C4', '#7C8794', '#4B5560'],
     heal: ['#F2FFFB', '#B8F5E4', '#5FD9B8', '#2BA88A'],
     sparks: ['#FFFFFF', '#FFF2C0', '#FFC857'],
+    sense: ['#EAF7FF', '#8FDBFF', '#2F8CFF', '#1E5BD8'],
   };
 
   const sprites = new Map();
+
+  // Playback speed for every effect. 1 is normal; dev.html slows it down to study an effect.
+  let speed = 1;
+  function setSpeed(value) {
+    speed = value;
+    gsap.globalTimeline.timeScale(value);
+  }
 
   // A soft round glow in one color, drawn once and reused for every particle of that color.
   function glow(color) {
@@ -85,7 +93,7 @@
     addEventListener('resize', resize);
 
     function colorAt(p, t) {
-      return p.colors[Math.min(p.colors.length - 1, Math.floor(t * p.colors.length))];
+      return p.colors[Math.max(0, Math.min(p.colors.length - 1, Math.floor(t * p.colors.length)))];
     }
 
     // A straight jet of water from its tail to its head, widest at the front.
@@ -137,6 +145,23 @@
       }
     }
 
+    // A curved wave front, bowed out in the direction it travels, with a glowing core.
+    function drawWave(p) {
+      const r = p.size;
+      const cx = p.x - Math.cos(p.dir) * r;
+      const cy = p.y - Math.sin(p.dir) * r;
+      const base = ctx.globalAlpha;
+      ctx.lineCap = 'round';
+      for (const [w, color, a] of [[p.width * 4, p.colors[3], 0.3], [p.width * 2, p.colors[2], 0.85], [p.width * 0.8, p.colors[0], 1]]) {
+        ctx.globalAlpha = base * a;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, p.dir - 0.75, p.dir + 0.75);
+        ctx.stroke();
+      }
+    }
+
     // A thin, writhing tendril reaching from one point to another, thinnest at its tip.
     function drawTendril(p, now) {
       const n = 28;
@@ -163,7 +188,8 @@
     }
 
     function frame(now) {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      // The frame's timestamp can be a hair earlier than when a particle was added, so never step backwards.
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * speed;
       last = now;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles = particles.filter((p) => p.fixed || p.delay > 0 || (p.age += dt) < p.life);
@@ -206,6 +232,8 @@
           drawBolt(p);
         } else if (p.shape === 'tendril') {
           drawTendril(p, now);
+        } else if (p.shape === 'wave') {
+          drawWave(p);
         } else if (p.shape === 'swirl') {
           // Three arcs spinning around one center, like water being drawn into a whirlpool.
           ctx.lineCap = 'round';
@@ -221,7 +249,7 @@
           ctx.strokeStyle = p.colors[0];
           ctx.lineWidth = Math.max(1, (p.shape === 'ring' ? 10 : 4) * (1 - t));
           ctx.beginPath();
-          ctx.ellipse(p.x, p.y, size / 2, p.shape === 'ripple' ? size * 0.16 : size / 2, 0, 0, Math.PI * 2);
+          ctx.ellipse(p.x, p.y, size / 2, p.shape === 'ripple' ? size * 0.16 : (size / 2) * (p.squash || 1), 0, 0, Math.PI * 2);
           ctx.stroke();
         } else if (p.shape === 'drop') {
           // Stretched along its direction of travel, like a flying droplet.
@@ -658,6 +686,59 @@
     }
   }
 
+  // A player's cards on screen: your hand for your own seat, the face-up card for anyone else's.
+  function cardsOf(seat) {
+    if (seat.classList.contains('me-line')) {
+      const hand = [...document.querySelectorAll('.hand .card')];
+      if (hand.length) return hand;
+    }
+    const shown = [...seat.querySelectorAll('.card')];
+    return shown.length ? shown : [seat];
+  }
+
+  // The middle of a seat's cards, and how much room they take up.
+  function cardsCenter(seat) {
+    const boxes = cardsOf(seat).map((el) => el.getBoundingClientRect());
+    const left = Math.min(...boxes.map((b) => b.left));
+    const right = Math.max(...boxes.map((b) => b.right));
+    const top = Math.min(...boxes.map((b) => b.top));
+    const bottom = Math.max(...boxes.map((b) => b.bottom));
+    return { x: (left + right) / 2, y: (top + bottom) / 2, w: right - left, h: bottom - top };
+  }
+
+  // A bright outline and glow around each element that fades away. Cards that are greyed out (your hand
+  // while you can't play) light up fully for the moment, then go back to how they were.
+  function outline(els, color, seconds) {
+    els.forEach((el) => {
+      gsap.fromTo(el,
+        { boxShadow: `0 0 0 3px ${color}, 0 0 26px ${color}` },
+        { boxShadow: '0 0 0 0px rgba(0,0,0,0), 0 0 0px rgba(0,0,0,0)', duration: seconds, ease: 'power2.in', clearProps: 'boxShadow' });
+      gsap.fromTo(el, { filter: 'brightness(1.25) saturate(1.1)' }, { filter: 'brightness(1) saturate(1)', duration: seconds, ease: 'power2.in', clearProps: 'filter' });
+    });
+  }
+
+  // The hand Seismic Sense reveals: each card starts face-down, then flips face-up one after another.
+  function reveal(cards, back) {
+    const blue = POWERS.sense;
+    return new Promise((resolve) => {
+      const list = [...cards];
+      if (!list.length) return resolve();
+      const tl = gsap.timeline({ onComplete: resolve });
+      list.forEach((el, n) => {
+        const cover = document.createElement('span');
+        cover.className = 'fx-cover';
+        cover.innerHTML = back;
+        el.appendChild(cover);
+        const at = n * 0.1;
+        tl.to(el, { scaleX: 0, duration: 0.11, ease: 'power1.in' }, at)
+          .add(() => cover.remove(), at + 0.11)
+          .to(el, { scaleX: 1, duration: 0.16, ease: 'back.out(2)', clearProps: 'transform' }, at + 0.11)
+          .fromTo(el, { boxShadow: `0 0 0 2px ${blue[1]}, 0 0 16px ${blue[2]}` },
+            { boxShadow: '0 0 0 0px rgba(0,0,0,0), 0 0 0px rgba(0,0,0,0)', duration: 0.9, ease: 'power2.in', clearProps: 'boxShadow' }, at + 0.11);
+      });
+    });
+  }
+
   // A point on the edge of an element's box, and the direction pointing out from it.
   function edgePoint(at, angle) {
     const cx = Math.cos(angle);
@@ -726,43 +807,49 @@
       return 1.2;
     },
 
-    // A stomp, then shockwaves roll across the table to the player being read.
+    // Seismic Sense: the user's cards glow blue, three curved sensing waves travel to the target, the target's
+    // cards shake and light up while detection rings spread around them. It reads people, so nothing hits.
+    // About 1.4 seconds. The user then sees the target's hand flip face-up (reveal(), called by ui.js).
     seismic(layer, host, user, target) {
-      const u = center(user);
-      const c = ELEMENTS.earth.colors;
-      gsap.timeline()
-        .to(user, { y: 5, duration: 0.08, ease: 'power3.in' })
-        .to(user, { y: 0, duration: 0.3, ease: 'back.out(3)' });
-      for (let i = 0; i < 8; i++) {
+      const blue = POWERS.sense;
+      const from = cardsCenter(user);
+
+      // 0-300 ms: the user's cards glow electric blue, with light rising off them.
+      popLabel(host, user, 'Seismic Sense', blue[1]);
+      outline(cardsOf(user), blue[2], 0.9);
+      for (let i = 0; i < 16; i++) {
         layer.add({
-          blend: 'source-over', x: u.x + rand(-u.w / 2, u.w / 2), y: u.y + u.h / 2, vx: rand(-120, 120), vy: rand(-50, -10),
-          drag: 2.5, size: rand(20, 32), grow: 1, life: rand(0.5, 0.8), alpha: 0.5, colors: [ELEMENTS.earth.dust],
+          x: from.x + rand(-from.w / 2, from.w / 2), y: from.y + from.h * 0.45, vx: rand(-10, 10), vy: rand(-140, -60), drag: 1.2,
+          size: rand(10, 22), life: rand(0.4, 0.7), colors: blue,
         });
       }
-      if (target) {
-        const t = center(target);
-        for (let k = 0; k <= 6; k++) {
-          const f = k / 6;
-          const x = u.x + (t.x - u.x) * f;
-          const y = u.y + (t.y - u.y) * f;
-          layer.add({ shape: 'ripple', x, y, size: 44, grow: 3, life: 0.5, delay: 0.12 + k * 0.07, colors: [c[0]] });
-          layer.add({
-            blend: 'source-over', x, y, vx: rand(-60, 60), vy: rand(-40, -10), drag: 2, size: rand(24, 36), grow: 1,
-            life: 0.6, delay: 0.12 + k * 0.07, alpha: 0.4, colors: [ELEMENTS.earth.dust],
-          });
-          layer.add({
-            shape: 'shard', blend: 'source-over', x, y, vx: rand(-40, 40), vy: rand(-220, -120), gravity: 1200, spin: rand(-10, 10),
-            size: rand(3, 6), pts: rockShape(5), life: 0.5, delay: 0.12 + k * 0.07, colors: [c[2]],
-          });
+      if (!target) return 0.9;
+
+      // 300-1000 ms: three curved waves travel from the user's cards to the target's.
+      const to = cardsCenter(target);
+      const dir = Math.atan2(to.y - from.y, to.x - from.x);
+      const reach = Math.max(55, Math.min(120, Math.hypot(to.x - from.x, to.y - from.y) * 0.2));
+      for (let k = 0; k < 3; k++) {
+        const wave = layer.add({ shape: 'wave', fixed: true, x: from.x, y: from.y, dir, size: reach * 0.75, width: 6, alpha: 0, colors: blue });
+        gsap.timeline({ delay: 0.3 + k * 0.13, onComplete: () => layer.remove(wave) })
+          .to(wave, { alpha: 1, duration: 0.08 })
+          .to(wave, { x: to.x - Math.cos(dir) * reach * 0.3, y: to.y - Math.sin(dir) * reach * 0.3, size: reach * 1.2, duration: 0.55, ease: 'power1.in' }, 0)
+          .to(wave, { alpha: 0, duration: 0.12 }, 0.47);
+      }
+
+      // 900-1400 ms: the target's cards shake and light up, and detection rings spread around them.
+      gsap.delayedCall(0.9, () => {
+        const cards = cardsOf(target);
+        outline(cards, blue[1], 1.1);
+        cards.forEach((el) => gsap.fromTo(el, { x: 0 }, { keyframes: { x: [-3, 3, -2, 2, -1, 1, 0] }, duration: 0.45, ease: 'none' }));
+        // Oval rings that hug the cards, whether that's one card on a seat or a whole hand.
+        const squash = Math.max(0.3, Math.min(1, to.h / to.w));
+        for (let k = 0; k < 3; k++) {
+          layer.add({ shape: 'ring', x: to.x, y: to.y, size: to.w * 1.1, squash, grow: 0.35 + k * 0.25, life: 0.7, delay: k * 0.14, colors: [blue[1]] });
         }
-        gsap.delayedCall(0.6, () => {
-          flash(target, 'brightness(1.2) sepia(0.5)', c[1], 20);
-          gsap.fromTo(target, { y: 0 }, { keyframes: { y: [-4, 2, 0] }, duration: 0.25, ease: 'none' });
-          popLabel(host, target, 'Sensed', c[0]);
-        });
-      }
-      popLabel(host, user, 'Seismic Sense', c[0]);
-      return 1.2;
+        popLabel(host, target, 'Sensed', blue[1]);
+      });
+      return 1.4;
     },
 
     // Steel plates slam in from every side and lock around the seat with a clang.
@@ -935,5 +1022,5 @@
 
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  root.PXFx = { createLayer, attack, ability, strike, reducedMotion, ELEMENTS };
+  root.PXFx = { createLayer, attack, ability, strike, reveal, reducedMotion, setSpeed, ELEMENTS };
 })(typeof self !== 'undefined' ? self : this);

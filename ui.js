@@ -108,13 +108,17 @@
     const fx = session.abilityFx;
     if (!fxLayer) fxLayer = PXFx.createLayer(document.body);
     const seatOf = (i) => app.querySelector(`[data-seat="${i}"]`);
-    await Promise.all(session.state.view.abilities.map((a, n) => new Promise((r) => setTimeout(r, n * 450)).then(() => {
+    const list = session.state.view.abilities;
+    const me = session.state.me;
+    await Promise.all(list.map((a, n) => new Promise((r) => setTimeout(r, n * 450)).then(() => {
       if (session.abilityFx !== fx || !seatOf(a.player)) return null;
       return PXFx.ability(fxLayer, document.body, a.sub, seatOf(a.player), a.target === null ? null : seatOf(a.target));
     })));
     if (session.abilityFx !== fx) return;
     fx.playing = false;
     render();
+    // Your own Seismic Sense: the hand you read flips face-up, card by card. Only you get this hand.
+    if (list.some((a) => a.sub === 'seismic' && a.player === me)) PXFx.reveal(app.querySelectorAll('.seen .card'), cardBack());
   }
 
   const abilitiesPlaying = () => !!(session.abilityFx && session.abilityFx.playing);
@@ -191,7 +195,27 @@
 
   // Ways into a room
 
+  // Practice only, for previewing abilities: open the page with ?dev and every player starts with full
+  // charge and bots always use their power; ?dev=seismic (or any sub-element) gives every bot that power.
+  function devPractice() {
+    const dev = new URLSearchParams(location.search).get('dev');
+    if (dev === null || window.PXDevPatched) return;
+    window.PXDevPatched = true;
+    const createGame = PX.createGame;
+    PX.createGame = (opts) => {
+      if (SUBS[dev]) opts.seats.forEach((seat, i) => { if (i > 0) seat.sub = dev; });
+      const game = createGame(opts);
+      game.players.forEach((p) => { p.charge = CONFIG.maxCharge; });
+      return game;
+    };
+    PXBots.STRATEGIES.smart.ability = (view) => {
+      const others = view.players.filter((p) => p.index !== view.me && p.alive);
+      return others.length ? { target: others[0].index, slot: 0 } : null;
+    };
+  }
+
   function playSolo(bots) {
+    devPractice();
     const token = 'solo';
     const room = PXHost.createRoom({ send: (_t, s) => receive(s) });
     session.send = (action) => room.action(token, action);
@@ -530,6 +554,8 @@
   }
 
   function knowledgeHtml(s) {
+    // A hand seen through Seismic Sense appears once its animation has finished.
+    if (abilitiesPlaying()) return '';
     const known = s.view.knowledge;
     if (!known) return '';
     const name = esc(s.view.players[known.target].name);
@@ -558,7 +584,8 @@
         ${s.isHost ? '<div class="buttons"><button class="action" id="back-to-lobby">Back to lobby</button></div>' : '<p class="prompt"><small>The host can start another game.</small></p>'}`;
     }
     if (s.stage === 'reveal') {
-      return `${revealHtml(s, s.report)}${s.needs === 'ready' ? '<button class="action" id="next">Next round</button>' : `<p class="prompt"><small>${waitingText(s)}</small></p>`}`;
+      // With timers, the next round starts by itself when the clock runs out. Only untimed games have a button.
+      return `${revealHtml(s, s.report)}${s.needs === 'ready' ? '<button class="action" id="next">Next round</button>' : ''}`;
     }
     if (session.pick && session.pick.mode === 'target') {
       return `<p class="prompt">Choose a player for ${sub.name}.</p><button class="action quiet" id="back">Back</button>`;
@@ -676,7 +703,8 @@
   function tick() {
     const el = document.getElementById('countdown');
     if (!el) return;
-    if (session.deadline === null) {
+    // No clock while the hits are still playing: it appears once the results are up.
+    if (session.deadline === null || animating()) {
       el.textContent = '';
       el.className = 'clock';
       return;

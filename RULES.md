@@ -33,7 +33,7 @@ In the same element, the higher number wins. Equal numbers do nothing.
 
 Everyone can see how many calls each player has kept.
 
-In a room with friends, each step has a time limit: 20 seconds for abilities, 20 for calls, 30 for cards and 30 to look at the reveal. If time runs out, you hold your charge, make no call and play a random card.
+Each step has a time limit: 20 seconds for abilities, 20 for calls and 30 for cards. The reveal plays its hits, then the next round starts by itself 10 seconds later. If time runs out, you hold your charge, make no call and play a random card.
 
 If you're bloodbent, you still call and can lie about your forced card.
 

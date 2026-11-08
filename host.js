@@ -8,7 +8,17 @@
   const MAX_SEATS = 6;
   const MIN_SEATS = 2;
   const BOT_NAMES = ['Reed', 'Flint', 'Marsh', 'Cinder', 'Slate'];
-  const DEFAULT_TIMERS = { abilities: 20, calls: 20, cards: 30, reveal: 30 };
+  // Seconds for each step. The reveal's time comes after its hit animations (see revealSeconds).
+  const DEFAULT_TIMERS = { abilities: 20, calls: 20, cards: 30, reveal: 10 };
+
+  // About how long a round's hits take to play out in the browser, so the reveal timer starts after them.
+  // Matches the animations in fx.js: the cards flip, then each attacker's hits, then any Lightning.
+  function animationSeconds(report) {
+    if (!report) return 0;
+    const attackers = report.plays.filter((play) => Object.values(report.damageFrom).some((hits) => hits.some((h) => h.player === play.player))).length;
+    const bolts = report.abilities.filter((a) => a.sub === 'lightning').length;
+    return Math.ceil(1 + report.plays.length * 0.1 + attackers * 1.4 + bolts * 1);
+  }
 
   function cleanName(raw) {
     const text = String(raw == null ? '' : raw).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 16);
@@ -41,7 +51,8 @@
 
     // What a seat still has to do right now, if anything.
     function needsOf(i) {
-      if (stage === 'reveal') return acted.has(i) ? null : 'ready';
+      // With timers, the reveal moves on by itself. Without them, everyone clicks Next round.
+      if (stage === 'reveal') return timers || acted.has(i) ? null : 'ready';
       if (stage !== 'playing' || acted.has(i)) return null;
       const p = game.players[i];
       const phase = game.turn.phase;
@@ -106,12 +117,13 @@
       if (key === timerKey) return undefined;
       stopTimer();
       timerKey = key;
-      deadline = now() + timers[phase] * 1000;
+      const seconds = timers[phase] + (phase === 'reveal' ? animationSeconds(report) : 0);
+      deadline = now() + seconds * 1000;
       timer = setTimer(() => {
         timer = null;
         advance();
         settle();
-      }, timers[phase] * 1000);
+      }, seconds * 1000);
       return undefined;
     }
 
@@ -161,7 +173,8 @@
     }
 
     function settle() {
-      while ((stage === 'playing' || stage === 'reveal') && waitingSeats().length === 0) advance();
+      // A timed reveal waits for its timer; everything else moves on as soon as nobody is left to act.
+      while ((stage === 'playing' || (stage === 'reveal' && !timers)) && waitingSeats().length === 0) advance();
       syncTimer();
       publish();
     }
@@ -290,5 +303,5 @@
     };
   }
 
-  return { createRoom, cleanName, MAX_SEATS, MIN_SEATS, DEFAULT_TIMERS };
+  return { createRoom, cleanName, animationSeconds, MAX_SEATS, MIN_SEATS, DEFAULT_TIMERS };
 });

@@ -23,6 +23,8 @@ There's no build step and nothing to install.
 - `index.html` is the game. Serve the folder or open the file directly.
 - `node --test` runs the rules and room tests.
 - `node sim.js` runs the balance simulator.
+- `dev.html` is the effects playground: every card hit and power is one click away, with slow motion. `dev.html?play=seismic` plays one as soon as the page opens.
+- `index.html?dev` starts practice games with everyone at full charge and bots always using their power. `?dev=seismic` gives every bot that power.
 
 | File | What it does |
 |---|---|
@@ -32,6 +34,8 @@ There's no build step and nothing to install.
 | `net.js` | Connects browsers with [PeerJS](https://peerjs.com/) |
 | `ui.js`, `art.js`, `style.css` | The screens and placeholder card art |
 | `help.js` | The how-to-play walkthrough |
+| `fx.js` | Hit and power animations |
+| `dev.html`, `dev.js`, `dev.css` | The effects playground |
 | `music.js` | Background music, with the volume set at the top of the file |
 | `sim.js` | Balance simulator |
 
