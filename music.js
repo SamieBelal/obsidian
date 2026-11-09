@@ -3,7 +3,7 @@
   const VOLUME = 0.22; // the file is already evened out, so this is the one number to change
   const FADE_MS = 1500;
   const KEY = 'px-music-off';
-  const audio = new Audio('audio/agni-kai.mp3');
+  const audio = new Audio('audio/titans-vow.mp3');
   audio.loop = true;
   audio.preload = 'none';
   audio.volume = 0;
