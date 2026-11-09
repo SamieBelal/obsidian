@@ -9,7 +9,7 @@
   const MIN_SEATS = 2;
   const BOT_NAMES = ['Reed', 'Flint', 'Marsh', 'Cinder', 'Slate'];
   // Seconds for each step. The reveal's time comes after its hit animations (see revealSeconds).
-  const DEFAULT_TIMERS = { abilities: 20, calls: 20, cards: 30, reveal: 10 };
+  const DEFAULT_TIMERS = { plan: 25, cards: 30, reveal: 5 };
 
   // About how long a round's hits take to play out in the browser, so the reveal timer starts after them.
   // Matches the animations in fx.js: the cards flip, then each attacker's hits, then any Lightning.
@@ -51,13 +51,17 @@
 
     // What a seat still has to do right now, if anything.
     function needsOf(i) {
-      // With timers, the reveal moves on by itself. Without them, everyone clicks Next round.
-      if (stage === 'reveal') return timers || acted.has(i) ? null : 'ready';
+      // Everyone clicks Next round to move on. With timers, the reveal also moves on by itself when time runs out.
+      if (stage === 'reveal') return acted.has(i) ? null : 'ready';
       if (stage !== 'playing' || acted.has(i)) return null;
       const p = game.players[i];
       const phase = game.turn.phase;
-      if (phase === 'abilities') return p.alive && PX.canUseAbility(game, i) ? 'ability' : null;
-      if (phase === 'calls') return p.alive ? 'call' : null;
+      // Step 1: call an element, then decide on your sub-element if you have the charge for it.
+      if (phase === 'plan') {
+        if (!p.alive) return null;
+        if (!(i in game.turn.calls)) return 'call';
+        return PX.canUseAbility(game, i) ? 'ability' : null;
+      }
       if (!p.alive) return 'vote';
       return game.turn.forced[i] ? null : 'card';
     }
@@ -133,11 +137,12 @@
         if (!s.bot) return;
         const p = game.players[i];
         const view = PX.viewFor(game, i);
-        if (phase === 'abilities' && p.alive && PX.canUseAbility(game, i)) {
-          const choice = STRATEGIES.smart.ability(view, rng);
-          if (choice) PX.submitAbility(game, i, choice);
-        } else if (phase === 'calls' && p.alive) {
+        if (phase === 'plan' && p.alive) {
           PX.submitCall(game, i, STRATEGIES.smart.call(view, rng));
+          if (PX.canUseAbility(game, i)) {
+            const choice = STRATEGIES.smart.ability(view, rng);
+            if (choice) PX.submitAbility(game, i, choice);
+          }
         } else if (phase === 'cards') {
           if (!p.alive) PX.submitVote(game, i, chooseVote(view, rng));
           else if (!game.turn.forced[i]) PX.submitCard(game, i, STRATEGIES.smart.card(view, rng));
@@ -155,11 +160,8 @@
         return;
       }
       const phase = game.turn.phase;
-      if (phase === 'abilities') {
-        PX.resolveAbilities(game);
-        botsAct();
-      } else if (phase === 'calls') {
-        PX.revealCalls(game);
+      if (phase === 'plan') {
+        PX.resolvePlan(game);
         botsAct();
       } else {
         game.players.forEach((p) => {
@@ -173,8 +175,8 @@
     }
 
     function settle() {
-      // A timed reveal waits for its timer; everything else moves on as soon as nobody is left to act.
-      while ((stage === 'playing' || (stage === 'reveal' && !timers)) && waitingSeats().length === 0) advance();
+      // Each step moves on as soon as nobody is left to act; a timed one also moves on when its clock runs out.
+      while ((stage === 'playing' || stage === 'reveal') && waitingSeats().length === 0) advance();
       syncTimer();
       publish();
     }
@@ -244,7 +246,10 @@
       if (needs === 'ability' && action.choice) {
         PX.submitAbility(game, i, { target: Number(action.choice.target), slot: Number(action.choice.slot) || 0 });
       } else if (needs === 'call') {
+        // Making a call doesn't finish step 1 if there's a sub-element to decide on next.
         PX.submitCall(game, i, action.el);
+        settle();
+        return;
       } else if (needs === 'card') {
         PX.submitCard(game, i, action.id);
       } else if (needs === 'vote') {

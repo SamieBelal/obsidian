@@ -1,0 +1,134 @@
+/* Mock designs for "How a round goes" (mock-round.html) only. */
+
+.slot { position: relative; display: block; }
+.slot .fx-dmg { left: 50%; }
+
+.rd-empty { display: block; width: 84px; aspect-ratio: 320 / 465; border: 1.5px dashed var(--line); border-radius: 8px; }
+
+.rd-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid rgba(246, 239, 224, 0.4);
+  border-radius: 999px;
+  background: rgba(9, 26, 24, 0.95);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* The big step text: easy to read, one short line at a time. */
+.rd-step { min-height: 5.2em; margin: 0.9rem 0 0; text-align: center; line-height: 1.4; font-size: 1.15rem; }
+.rd-step > span, .rd-step > strong { display: block; }
+.rd-num { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.rd-step strong { font: 800 1.7rem/1.2 var(--display); margin-bottom: 0.1rem; }
+.rd-after { color: var(--soft); }
+
+/* Step pills (A) */
+
+.rd-pills { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin-bottom: 0.9rem; }
+
+.rd-pill, .rd-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(4, 14, 12, 0.6);
+  color: var(--soft);
+  font: 700 0.95rem var(--body);
+}
+
+.rd-pill { cursor: pointer; }
+
+.rd-pill b, .rd-dot b {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--bone);
+  font-size: 0.85rem;
+}
+
+.rd-pill.on, .rd-dot.on { color: var(--bone); border-color: var(--gold); box-shadow: 0 0 10px rgba(217, 174, 82, 0.5); }
+.rd-pill.on b, .rd-dot.on b { background: var(--gold); color: var(--ink); }
+.rd-dot.done { color: var(--bone); }
+.rd-dot.done b { background: var(--bone); color: var(--ink); }
+
+.rd-arrow { color: var(--soft); font-weight: 700; }
+
+/* Two seats, side by side (A and C) */
+
+.duo {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(217, 174, 82, 0.35);
+  border-radius: 12px;
+  background: rgba(4, 14, 12, 0.6);
+}
+
+.duo-seat { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
+.duo-name { font-weight: 700; font-size: 1.05rem; }
+.duo-seat[data-who="you"] .duo-name { color: var(--gold); }
+.duo-call { min-height: 1.9rem; }
+.help-body .duo .card { width: 84px; }
+
+/* B: three panels */
+
+.ov { display: flex; align-items: stretch; justify-content: center; gap: 0.35rem; margin-top: 0.4rem; }
+
+.ov-panel {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.1rem 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(4, 14, 12, 0.6);
+  text-align: center;
+  line-height: 1.35;
+  opacity: 0.35;
+  transition: opacity 0.3s, border-color 0.3s;
+}
+
+.ov-panel.on { opacity: 1; border-color: var(--gold); }
+.ov-panel strong { font: 800 1.35rem/1.2 var(--display); margin-top: 0.3rem; }
+.ov-panel > span:not(.ov-num) { font-size: 0.95rem; }
+
+.ov-num {
+  position: absolute;
+  top: -0.8rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.ov-pic { display: flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 7rem; flex-wrap: wrap; }
+.help-body .ov-pic .card { width: 56px; }
+.ov-power { width: 44px; }
+.ov-arrow { align-self: center; color: var(--gold); font: 800 1.4rem var(--display); }
+
+/* C: one question at a time */
+
+.rd-dots { display: flex; justify-content: center; gap: 0.4rem; margin-bottom: 0.9rem; }
+
+.ask-box { min-height: 8.5rem; margin-top: 0.9rem; text-align: center; font-size: 1.1rem; line-height: 1.4; }
+.ask-box > strong { display: block; font: 800 1.5rem/1.2 var(--display); }
+.ask-box > span { display: block; color: var(--soft); }
+.ask-buttons { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; }
+.ask-buttons .el-icon { width: 1.2em; height: 1.2em; }
+.ask-power { width: 48px; }
+.ask-buttons .tap-row { margin: 0; }

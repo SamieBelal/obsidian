@@ -1,0 +1,55 @@
+/* Mock designs for "Last one standing" (mock-win.html) only. */
+
+.ev-vs { display: block; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.fo-caption .dmg.gain { color: var(--gold); }
+.wn-big { font-size: 2.2rem !important; }
+.ask-box .bad { color: var(--hurt); }
+
+.wn-stage { min-height: 12.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; }
+.wn-row { display: flex; justify-content: center; gap: 1.6rem; }
+
+.wn-seat { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.6rem 0.9rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(4, 14, 12, 0.6); }
+.help-body .wn-seat .card { width: 72px; }
+
+.wn-hp { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--soft); }
+.wn-hp b { color: var(--bone); font-size: 1.05rem; }
+.wn-bar { display: inline-block; width: 64px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.wn-bar i { display: block; height: 100%; background: #6FD08C; }
+
+/* Hands: the face-up card stands out with a gold ring and a label. */
+.wn-label { margin: 0; color: var(--soft); font-weight: 700; }
+.wn-hand { display: flex; justify-content: center; gap: 0.4rem; }
+.wn-held { position: relative; display: flex; flex-direction: column; align-items: center; }
+.help-body .wn-hand .card { width: 62px; }
+.wn-held.shown .card { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(217, 174, 82, 0.6); }
+.wn-eye { position: absolute; top: calc(100% + 0.3rem); white-space: nowrap; font-size: 0.75rem; font-weight: 700; color: var(--gold); }
+.wn-hand.theirs .card { width: 40px; }
+.help-body .wn-hand.theirs .card { width: 40px; }
+
+/* Sudden death banner. */
+.wn-banner {
+  padding: 0.3rem 1.1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8E1F12, #E4512B);
+  color: #FFF4E6;
+  font: 800 1.3rem var(--display);
+  letter-spacing: 0.03em;
+  box-shadow: 0 0 18px rgba(228, 81, 43, 0.6);
+}
+.wn-banner.small { align-self: center; width: fit-content; margin: 0.5rem auto; font-size: 1rem; }
+
+.wn-winner { border-color: var(--gold); box-shadow: 0 0 24px rgba(217, 174, 82, 0.5); }
+.wn-world { display: flex; flex-direction: column; align-items: center; padding: 0.4rem; border-radius: 12px; background: radial-gradient(ellipse at center, rgba(111, 211, 240, 0.16), transparent 70%); }
+.wn-world .sp-ghost-card { width: 34px; }
+
+/* B */
+.wn-duel { display: flex; justify-content: center; }
+.wn-me { width: fit-content; margin: 0 auto; }
+.wn-play { min-height: 0; }
+.help-body .wn-play .card { width: 72px; }
+
+/* C */
+.wn-big-hp { font: 800 3.2rem/1 var(--display); color: #8FE3A6; }
+.wn-plus { font: 800 3rem/1 var(--display); color: var(--hurt); }
+.ov-pic .wn-hand.theirs .card { width: 30px; }
+.wn-finish { min-height: 3rem; margin: 1rem 0 0; text-align: center; font: 800 2rem/1.2 var(--display); color: var(--gold); }

@@ -1,0 +1,130 @@
+/* Mock designs page (mock-beats.html) only. */
+
+body { min-height: 100vh; padding: 1rem; }
+
+.mock-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+
+.mock-tabs button {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(217, 174, 82, 0.5);
+  border-radius: 999px;
+  background: rgba(6, 19, 18, 0.9);
+  color: var(--bone);
+  font: 700 0.95rem var(--body);
+  cursor: pointer;
+}
+
+.mock-tabs button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+
+.mock-stage { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
+
+/* The real tutorial is a dialog; here it's a plain box styled the same. */
+#help.mock-help { display: block; position: relative; margin: 0 auto; }
+
+.mock-note { max-width: 40rem; margin: 0; color: var(--soft); font-size: 0.95rem; line-height: 1.45; text-align: center; }
+
+.el-icon { width: 1.4em; height: 1.4em; vertical-align: middle; }
+
+.el-word { font-weight: 800; color: var(--el); }
+
+.buttons.center { justify-content: center; }
+
+.soft { color: var(--soft); font-weight: 400; }
+
+/* A: the loop */
+
+.loop { position: relative; width: min(360px, 100%); aspect-ratio: 360 / 300; margin: 0 auto; }
+
+.loop svg { position: absolute; inset: 0; width: 100%; height: 100%; color: rgba(246, 239, 224, 0.3); }
+
+.loop path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+  marker-end: url(#loop-arrow);
+  transition: color 0.2s;
+}
+
+.loop path.lit { color: var(--gold); filter: drop-shadow(0 0 6px var(--gold)); }
+.loop path.done { color: var(--bone); }
+
+.loop-card { position: absolute; width: 26%; }
+.help-body .loop-card .card { width: 100%; }
+.loop-water { left: 37%; top: 0; }
+.loop-fire { right: 0; top: 46%; }
+.loop-earth { left: 0; top: 46%; }
+
+.loop-caption, .fo-caption { min-height: 2.8em; margin: 0.6rem 0 0; font-size: 1.3rem; text-align: center; line-height: 1.35; }
+
+.loop-caption strong, .fo-caption strong { display: block; font-size: 1rem; font-weight: 600; color: var(--soft); }
+
+/* B: face-off */
+
+.faceoff { display: flex; justify-content: center; align-items: center; gap: 1.4rem; min-height: 200px; margin-top: 0.6rem; }
+
+.fo-slot { width: 128px; min-height: 180px; display: flex; align-items: center; }
+.help-body .fo-slot .card { width: 128px; }
+
+.fo-beats { font: 800 1.5rem var(--display); color: var(--gold); }
+
+.fo-pills { display: flex; justify-content: center; gap: 0.6rem; margin-top: 1rem; }
+
+.fo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(4, 14, 12, 0.6);
+  color: var(--bone);
+  font: 700 1.1rem var(--body);
+  cursor: pointer;
+}
+
+.fo-pill.on { border-color: var(--gold); box-shadow: 0 0 10px rgba(217, 174, 82, 0.5); }
+
+/* C: beat Reed */
+
+.duel { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; margin-top: 0.4rem; }
+.duel-name { font-weight: 700; color: var(--soft); }
+.help-body .duel .card { width: 104px; }
+
+.duel-hand { margin-top: 1.6rem; }
+.help-body .duel-hand .card { width: 92px; }
+
+.answer .action.small { margin-left: 0.8rem; vertical-align: middle; }
+
+.learned { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+
+.chip-learn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  color: var(--soft);
+  font-size: 0.85rem;
+  opacity: 0.4;
+}
+
+.chip-learn.on { border-style: solid; border-color: var(--gold); color: var(--bone); opacity: 1; }
+
+/* Step 2: damage */
+
+.fo-caption .dmg { display: block; font: 800 1.9rem/1.1 var(--display); color: var(--hurt); }
+.fo-caption .dmg.none { color: var(--soft); }
+.fo-caption em { font-style: normal; color: var(--bone); }
+.fo-pill { font-size: 1rem; }
+
+/* Center the damage number over the card. */
+.fo-slot { position: relative; }
+.fo-slot .fx-dmg { left: 50%; }
+
+/* Inside the full walkthrough (mock-tutorial.html): no tabs, notes or page background, just the window. */
+html.embed, body.embed { background: transparent; }
+body.embed::before { display: none; }
+body.embed { padding: 0.5rem 0.75rem 1rem; min-height: 0; }
+body.embed .mock-tabs, body.embed .mock-note { display: none; }

@@ -26,11 +26,10 @@ function playGame(seats, elementCount, seed, rng, strategies) {
         stats.abilityUses[p.index] = (stats.abilityUses[p.index] || 0) + 1;
       }
     }
-    PX.resolveAbilities(s);
     for (const p of s.players) {
       if (p.alive) PX.submitCall(s, p.index, strategies[p.index].call(PX.viewFor(s, p.index), rng));
     }
-    PX.revealCalls(s);
+    PX.resolvePlan(s);
     for (const p of s.players) {
       if (p.alive) {
         if (!s.turn.forced[p.index]) PX.submitCard(s, p.index, strategies[p.index].card(PX.viewFor(s, p.index), rng));

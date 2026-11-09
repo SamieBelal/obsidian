@@ -58,7 +58,6 @@
     for (const card of view.hand) {
       let gain = 0;
       let loss = 0;
-      let missChance = 1;
       const doubled = me.primed && card.el === 'fire' ? 2 : 1;
       for (const { r, weights } of rivals) {
         const hitChance = table[card.el].reduce((sum, el) => sum + (weights[el] || 0), 0);
@@ -73,10 +72,10 @@
         const taken = hurtChance * (1 + below) + sameChance * below;
         gain += 3 * dealt * (r.hp <= 2 ? 1.6 : 1) * (r.shield > 0 ? 0.1 : 1);
         loss += 3 * taken;
-        missChance *= 1 - (hitChance + sameChance * above);
       }
       if (me.shield > 0) loss = 0;
-      const charge = (card.el === me.element ? 1 + (1 - missChance) : 0) + (card.el === view.myCall ? PX.CONFIG.callBonus : 0);
+      // Every card earns the round's 1 charge, so only the bonuses separate one card from another.
+      const charge = (card.el === me.element ? PX.CONFIG.elementBonus : 0) + (card.el === view.myCall ? PX.CONFIG.callBonus : 0);
       const score = gain - 0.8 * loss + 1.2 * charge - 0.1 * card.power + (rng() - 0.5) * 2.4;
       if (score > bestScore) {
         bestScore = score;

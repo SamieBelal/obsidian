@@ -22,20 +22,20 @@ In the same element, the higher number wins. Equal numbers do nothing.
 
 ## A round
 
-1. **Abilities:** Anyone with enough charge can secretly lock in their ability, then all are revealed together.
-2. **Call:** Everyone secretly chooses an element to call, then all calls are revealed. You can lie.
-3. **Cards:** Everyone secretly picks a card.
-4. **Spirit World:** Eliminated players secretly vote for an element. The top element gets +1 power this round. A tied vote does nothing.
-5. **Reveal:** All cards flip at once, and you compare your card with every other player's.
-6. **Damage:** Each player who beats you deals 1. They deal 2 if they won on element and their number is also higher.
-7. **Charge:** Playing your element earns +2 if it hit someone, or +1 if it didn't. Playing the element you called earns another +1, whichever element it is. The meter holds 5.
-8. **Draw:** Everyone still in draws one card, which becomes their face-up card.
+A round has three steps.
+
+1. **Call it:** Everyone secretly calls an element (you can lie). Anyone with enough charge also decides whether to use their sub-element. When the step ends, the calls are revealed and the sub-elements go off together.
+2. **Pick a card:** Everyone secretly picks a card. Eliminated players secretly vote for an element in the Spirit World: the top element gets +1 power this round, and a tied vote does nothing.
+3. **Flip:** All cards flip at once, and you compare your card with every other player's.
+   - **Damage:** Each player who beats you deals 1. They deal 2 if they won on element and their number is also higher.
+   - **Charge:** You get 1 every round, +1 for playing your element and +1 for playing the element you called. Hits don't matter. The meter holds 5.
+   - **Draw:** Everyone still in draws one card, which becomes their face-up card.
 
 Everyone can see how many calls each player has kept.
 
-Each step has a time limit: 20 seconds for abilities, 20 for calls and 30 for cards. The reveal plays its hits, then the next round starts by itself 10 seconds later. If time runs out, you hold your charge, make no call and play a random card.
+Each step has a time limit: 25 seconds for calling and your sub-element, and 30 for cards. The reveal plays its hits, then the next round starts once everyone clicks Next round, or by itself 5 seconds later. If time runs out, you hold your charge, make no call and play a random card.
 
-If you're bloodbent, you still call and can lie about your forced card.
+Calls are made before anyone knows who used a sub-element, so if you're bloodbent you've already called by the time you see your forced card.
 
 ## Sudden death
 

@@ -84,7 +84,7 @@
     }
     // While the hits are playing, hold later updates so the screen isn't redrawn mid-animation.
     if (session.fx && session.fx.playing && state.report && state.report.round === session.fx.round) return;
-    if (abilitiesPlaying() && state.view.round === session.abilityFx.round && state.view.phase !== 'abilities') return;
+    if (abilitiesPlaying() && state.view.round === session.abilityFx.round && state.view.phase !== 'plan') return;
     const startFx = shouldAnimate(state);
     const startAbilities = shouldAnimateAbilities(state);
     render();
@@ -97,7 +97,7 @@
   function shouldAnimateAbilities(state) {
     if (state.screen !== 'game' || state.stage !== 'playing') return false;
     const view = state.view;
-    if (view.phase === 'abilities' || !view.abilities.length) return false;
+    if (view.phase === 'plan' || !view.abilities.length) return false;
     if (session.abilityFx && session.abilityFx.round === view.round) return false;
     const motion = window.PXFx && typeof gsap !== 'undefined' && !PXFx.reducedMotion();
     session.abilityFx = { round: view.round, playing: motion };
@@ -364,7 +364,7 @@
       <h3>${sub.name}</h3>
       <p class="detail-what">${sub.text}</p>
       <div class="detail-cost"><span class="pips" aria-label="Costs ${sub.cost} of ${CONFIG.maxCharge} charge">${pips}</span>${sub.cost} charge</div>
-      <p class="detail-how">Your element becomes <strong>${sub.element}</strong>. Play ${sub.element} cards to charge it: +${CONFIG.chargeForHit} if they beat someone, +${CONFIG.chargeForMiss} if not.</p>`;
+      <p class="detail-how">Your element becomes <strong>${sub.element}</strong>. You get ${CONFIG.chargePerRound} charge every round, +${CONFIG.elementBonus} for playing ${sub.element} and +${CONFIG.callBonus} for playing what you called.</p>`;
   }
 
   function renderLobby(s) {
@@ -584,8 +584,8 @@
         ${s.isHost ? '<div class="buttons"><button class="action" id="back-to-lobby">Back to lobby</button></div>' : '<p class="prompt"><small>The host can start another game.</small></p>'}`;
     }
     if (s.stage === 'reveal') {
-      // With timers, the next round starts by itself when the clock runs out. Only untimed games have a button.
-      return `${revealHtml(s, s.report)}${s.needs === 'ready' ? '<button class="action" id="next">Next round</button>' : ''}`;
+      // The next round starts once everyone clicks Next round, or by itself when a timed game's clock runs out.
+      return `${revealHtml(s, s.report)}${s.needs === 'ready' ? '<button class="action" id="next">Next round</button>' : '<p class="prompt"><small>Waiting for everyone to be ready.</small></p>'}`;
     }
     if (session.pick && session.pick.mode === 'target') {
       return `<p class="prompt">Choose a player for ${sub.name}.</p><button class="action quiet" id="back">Back</button>`;
@@ -603,8 +603,7 @@
             <button class="action quiet" id="hold">Hold your charge</button>
           </div>`;
       case 'call': {
-        const forcedNote = view.forcedId ? ' You are being bloodbent, so you must play the marked card, but you can still lie about it.' : '';
-        return `${story}${knowledgeHtml(s)}<p class="prompt">Call an element for everyone to see.<small>You can lie. Play what you call for +${CONFIG.callBonus} charge.${forcedNote}</small></p>
+        return `${story}<p class="prompt">Call an element for everyone to see.<small>You can lie. Play what you call for +${CONFIG.callBonus} charge.</small></p>
           <div class="buttons">${PX.elementsFor(s.elementCount).map((el) => `<button class="action power el-${el}" data-call="${el}">${icon(el)}<span>Call ${cap(el)}</span></button>`).join('')}</div>`;
       }
       case 'card':
@@ -623,12 +622,15 @@
     const view = s.view;
     if (!view.players[s.me].alive) return '';
     const canPlay = s.needs === 'card';
+    const me = view.players[s.me];
     const cards = view.hand.map((c) => {
       const label = `${cap(c.el)} ${c.power}${c.id === view.faceUpId ? ', visible to everyone' : ''}`;
       const notes = [];
       if (view.forcedId === c.id) notes.push('You must play this');
       else if (c.id === view.faceUpId) notes.push('Everyone can see this');
-      if (canPlay && c.el === view.myCall) notes.push(`${notes.length ? '. ' : ''}+${CONFIG.callBonus} charge`);
+      // What this card would earn: the round's charge, plus a bonus for your element and for your call.
+      const earns = CONFIG.chargePerRound + (c.el === me.element ? CONFIG.elementBonus : 0) + (c.el === view.myCall ? CONFIG.callBonus : 0);
+      if (canPlay) notes.push(`${notes.length ? '. ' : ''}+${earns} charge`);
       return `<div class="slot">
         <button class="card" data-card="${esc(c.id)}" aria-label="${label}" ${canPlay ? '' : 'disabled'}>${cardArt(c.el, c.power)}</button>
         <span class="tag">${notes.join('')}</span>

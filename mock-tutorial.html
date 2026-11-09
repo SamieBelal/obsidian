@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project X: the whole tutorial (mock)</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@800&family=Familjen+Grotesk:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* The walkthrough: the picked design of each page, one after another, over the game's background. */
+    body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0.8rem 0 2rem; }
+    .tour-bar { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem; color: var(--soft); font-size: 0.9rem; }
+    .tour-bar select, .tour-bar button { font: 600 0.85rem var(--body); color: var(--bone); background: rgba(6, 19, 18, 0.9); border: 1px solid rgba(217, 174, 82, 0.5); border-radius: 999px; padding: 0.3rem 0.8rem; cursor: pointer; }
+    #frame { width: min(46rem, 100vw); height: 40rem; border: 0; background: transparent; transition: height 0.2s; }
+    .tour-end { display: none; flex-direction: column; align-items: center; gap: 1rem; margin-top: 4rem; text-align: center; }
+    .tour-end h2 { font: 800 2.4rem var(--display); }
+    body.ended #frame { display: none; }
+    body.ended .tour-end { display: flex; }
+    .tour-v8 { display: none; }
+    body.on-last .tour-v8 { display: inline-flex; gap: 0.4rem; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="tour-bar">
+    <span id="where"></span>
+    <label class="tour-v8">Page 8 version
+      <select id="v8"><option value="a">A · Four quick beats</option><option value="b">B · Win the last round</option><option value="c">C · Three panels</option></select>
+    </label>
+    <button id="restart">Start over</button>
+  </div>
+  <iframe id="frame" title="Tutorial page" allowtransparency="true"></iframe>
+  <div class="tour-end">
+    <h2 id="end-title">Tutorial done</h2>
+    <p id="end-text">This is where the game would start.</p>
+    <button class="action" id="again">Go through it again</button>
+  </div>
+  <script>
+    // Each page and the design picked for it. Page 8 isn't picked yet, so the bar above lets you switch it.
+    const PAGES = [
+      ['Who beats who', 'mock-beats.html', 'b'],
+      ['Doing damage', 'mock-beats.html', 'd'],
+      ['How a round goes', 'mock-round.html', 'a'],
+      ['Choose your sub-element', 'mock-powers.html', 'b'],
+      ['Charging your sub-element', 'mock-charge.html', 'c'],
+      ['Everyone at once', 'mock-everyone.html', 'a'],
+      ['Knocked out? Not done yet', 'mock-spirit.html', 'b'],
+      ['Last one standing', 'mock-win.html', 'a'],
+    ];
+    const frame = document.getElementById('frame');
+    let page = 0;
+
+    function show(n) {
+      page = n;
+      document.body.classList.remove('ended');
+      document.body.classList.toggle('on-last', n === PAGES.length - 1);
+      const [title, file, design] = PAGES[n];
+      const v = n === PAGES.length - 1 ? document.getElementById('v8').value : design;
+      // The page number in the query makes the frame reload even when two pages share a file.
+      frame.src = `${file}?embed&page=${n}&v=${v}#${v}`;
+      document.getElementById('where').textContent = `Page ${n + 1} of ${PAGES.length}: ${title}`;
+      history.replaceState(null, '', `#${n + 1}`);
+    }
+
+    function end(skipped) {
+      document.body.classList.add('ended');
+      document.getElementById('end-title').textContent = skipped ? 'Skipped' : 'Tutorial done';
+      document.getElementById('where').textContent = '';
+    }
+
+    addEventListener('message', (e) => {
+      if (e.source !== frame.contentWindow || !e.data) return;
+      if (e.data.height) frame.style.height = `${Math.ceil(e.data.height) + 40}px`;
+      if (e.data.go === 'next') { if (page < PAGES.length - 1) show(page + 1); else end(false); }
+      if (e.data.go === 'back' && page > 0) show(page - 1);
+      if (e.data.go === 'skip') end(true);
+    });
+
+    document.getElementById('v8').addEventListener('change', () => show(page));
+    document.getElementById('restart').addEventListener('click', () => show(0));
+    document.getElementById('again').addEventListener('click', () => show(0));
+    const start = Number(location.hash.slice(1));
+    show(start >= 1 && start <= PAGES.length ? start - 1 : 0);
+  </script>
+</body>
+</html>

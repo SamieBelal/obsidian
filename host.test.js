@@ -17,7 +17,7 @@ function setup(options = {}) {
     setTimer: (fn, ms) => { const t = { fn, ms }; timers.push(t); return t; },
     clearTimer: (t) => { const n = timers.indexOf(t); if (n >= 0) timers.splice(n, 1); },
     now: () => clock,
-    timers: options.timers === undefined ? { abilities: 20, calls: 20, cards: 30, reveal: 10 } : options.timers,
+    timers: options.timers === undefined ? { plan: 25, cards: 30, reveal: 5 } : options.timers,
   });
   const latest = (token) => {
     const all = (inbox[token] || []).filter((m) => m.type === 'state');
@@ -162,12 +162,27 @@ test('an ability cannot be aimed at a dead or invalid player', () => {
   assert.strictEqual(t.latest('a').needs, 'ability', 'can still choose again');
 });
 
+test('step 1 asks for your call first, then your sub-element, all on one timer', () => {
+  const t = setup();
+  lobbyOfThree(t);
+  t.room.action('a', { type: 'start' });
+  // Play rounds until A can afford Lightning at the start of a round.
+  for (let n = 0; n < 200 && !(t.latest('a').needs === 'call' && t.latest('a').view.players[0].charge >= PX.SUBS.lightning.cost); n++) actAll(t, ['a', 'b', 'c']);
+  const before = t.timers.length;
+  t.room.action('a', { type: 'call', el: 'fire' });
+  assert.strictEqual(t.latest('a').needs, 'ability', 'then the sub-element');
+  assert.strictEqual(t.latest('a').view.phase, 'plan', 'still the same step');
+  assert.strictEqual(t.timers.length, before, 'no new timer');
+  t.room.action('a', { type: 'ability', choice: null });
+  assert.strictEqual(t.latest('a').needs, null);
+});
+
 test('the timer moves the game on, playing a random card for anyone who did not choose', () => {
   const t = setup();
   lobbyOfThree(t);
   t.room.action('a', { type: 'start' });
-  assert.strictEqual(t.latest('a').secondsLeft, 20);
-  t.fireTimer(); // calls time out with no call made
+  assert.strictEqual(t.latest('a').secondsLeft, 25);
+  t.fireTimer(); // step 1 times out with no call made
   assert.strictEqual(t.latest('a').needs, 'card');
   assert.strictEqual(t.latest('a').secondsLeft, 30);
   t.fireTimer(); // cards time out
@@ -178,7 +193,7 @@ test('the timer moves the game on, playing a random card for anyone who did not 
   assert.strictEqual(t.latest('a').view.round, 2);
 });
 
-test('with timers, the reveal needs no clicks: it waits for the hits to play, then 10 more seconds', () => {
+test('with timers, the reveal waits for the hits to play, then 5 more seconds, unless everyone is ready first', () => {
   const t = setup();
   lobbyOfThree(t);
   t.room.action('a', { type: 'start' });
@@ -186,11 +201,24 @@ test('with timers, the reveal needs no clicks: it waits for the hits to play, th
   t.fireTimer(); // cards time out
   const reveal = t.latest('a');
   assert.strictEqual(reveal.stage, 'reveal');
-  ['a', 'b', 'c'].forEach((token) => assert.strictEqual(t.latest(token).needs, null, 'nobody has to click Next round'));
-  assert.strictEqual(reveal.secondsLeft, 10 + animationSeconds(reveal.report));
+  ['a', 'b', 'c'].forEach((token) => assert.strictEqual(t.latest(token).needs, 'ready'));
+  assert.strictEqual(reveal.secondsLeft, 5 + animationSeconds(reveal.report));
   t.room.action('a', { type: 'ready' });
-  assert.strictEqual(t.latest('a').stage, 'reveal', 'a stray click does not skip the reveal');
+  t.room.action('b', { type: 'ready' });
+  assert.strictEqual(t.latest('a').stage, 'reveal', 'one player still looking holds the reveal');
+  assert.strictEqual(t.latest('a').needs, null);
+  t.room.action('c', { type: 'ready' });
+  assert.strictEqual(t.latest('a').stage, 'playing', 'everyone ready skips the rest of the timer');
+  assert.strictEqual(t.latest('a').view.round, 2);
+});
+
+test('with timers, the reveal moves on by itself when nobody clicks', () => {
+  const t = setup();
+  lobbyOfThree(t);
+  t.room.action('a', { type: 'start' });
   t.fireTimer();
+  t.fireTimer();
+  t.fireTimer(); // reveal times out
   assert.strictEqual(t.latest('a').stage, 'playing');
   assert.strictEqual(t.latest('a').view.round, 2);
 });

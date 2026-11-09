@@ -1,0 +1,22 @@
+/* Mock designs for "Everyone at once" (mock-everyone.html) only. */
+
+.ev-ask { text-align: center; margin-top: 0; }
+
+.ev-board {
+  background: rgba(4, 14, 12, 0.6);
+  border: 1px solid rgba(217, 174, 82, 0.35);
+  border-radius: 12px;
+}
+
+.help-body .ev-seat .card { width: 80px; }
+.ev-seat { transition: opacity 0.25s; }
+.ev-seat.dim { opacity: 0.25; }
+.ev-seat.ev-me .card { box-shadow: 0 0 0 3px var(--gold); }
+
+.ev-result { min-height: 2.8em; font-size: 0.85rem; line-height: 1.3; color: var(--soft); }
+.ev-result strong { display: block; font-size: 1.05rem; }
+.ev-result .bad, .ask-box .bad { color: var(--hurt); }
+.ev-result .good, .ask-box .good { color: #8FE3A6; }
+
+.ev-vs { display: block; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.ev-pill { font-size: 0.95rem; }

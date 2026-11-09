@@ -18,8 +18,7 @@ function game(subs, hands = [], elementCount = 3) {
 
 function playRound(state, picks, abilities = {}) {
   for (const [i, choice] of Object.entries(abilities)) PX.submitAbility(state, Number(i), choice);
-  PX.resolveAbilities(state);
-  PX.revealCalls(state);
+  PX.resolvePlan(state);
   picks.forEach((slot, i) => {
     if (slot !== null) PX.submitCard(state, i, state.players[i].hand[slot].id);
   });
@@ -56,14 +55,14 @@ test('within an element, the higher number deals 1 and equal numbers deal nothin
   assert.deepStrictEqual(playRound(even, [0, 0, 0]).damage, { 0: 0, 1: 0, 2: 0 });
 });
 
-test('charge: +2 for a hit with your element, +1 for a miss, 0 for other elements', () => {
+test('without calls: 1 charge every round, +1 for your element, and hits do not matter', () => {
   const s = game(['lightning', 'healing', 'seismic'], [
     [card('fire', 3), ...fill],
     [card('fire', 3), ...fill],
     [card('fire', 3), ...fill],
   ]);
   let r = playRound(s, [0, 0, 0]);
-  assert.deepStrictEqual(r.chargeGained, { 0: 1, 1: 0, 2: 0 });
+  assert.deepStrictEqual(r.chargeGained, { 0: 2, 1: 1, 2: 1 }, 'only Lightning plays its element');
 
   const t = game(['lightning', 'healing', 'seismic'], [
     [card('fire', 3), ...fill],
@@ -71,7 +70,7 @@ test('charge: +2 for a hit with your element, +1 for a miss, 0 for other element
     [card('earth', 3), ...fill],
   ]);
   r = playRound(t, [0, 0, 0]);
-  assert.deepStrictEqual(r.chargeGained, { 0: 2, 1: 2, 2: 2 });
+  assert.deepStrictEqual(r.chargeGained, { 0: 2, 1: 2, 2: 2 }, 'everyone plays their element, hit or not');
 });
 
 test('charge stops at the meter limit', () => {
@@ -112,7 +111,7 @@ test('Lightning hits regardless of the round, and costs 4', () => {
   s.players[0].charge = 4;
   const r = playRound(s, [0, 0, 0], { 0: { target: 2 } });
   assert.strictEqual(r.damage[2], 3);
-  assert.strictEqual(s.players[0].charge, 1, '4 spent, then +1 for playing fire without a hit');
+  assert.strictEqual(s.players[0].charge, 2, '4 spent, then 1 for the round and 1 for playing fire');
 });
 
 test('Metalbending blocks Lightning in the same round and lasts only that round', () => {
@@ -162,8 +161,7 @@ test('Seismic Sense reveals the hand to the user only', () => {
   ]);
   s.players[0].charge = 2;
   PX.submitAbility(s, 0, { target: 1 });
-  PX.resolveAbilities(s);
-  PX.revealCalls(s);
+  PX.resolvePlan(s);
   assert.strictEqual(PX.viewFor(s, 0).knowledge.hand.length, 5);
   assert.strictEqual(PX.viewFor(s, 2).knowledge, null);
 });
@@ -177,8 +175,7 @@ test('Bloodbending can only pick face-down cards and only the user sees the resu
     ]);
     s.players[0].charge = 4;
     PX.submitAbility(s, 0, { target: 1, slot });
-    PX.resolveAbilities(s);
-    PX.revealCalls(s);
+    PX.resolvePlan(s);
     const forcedId = s.turn.forced[1];
     assert.notStrictEqual(forcedId, s.players[1].faceUpId);
     assert.strictEqual(PX.viewFor(s, 0).knowledge.forcedId, forcedId);
@@ -225,8 +222,7 @@ test('Spirit World: +1 power can earn the number bonus, and a tied vote adds not
     ]);
     s.players[2].alive = false;
     s.players[3].alive = false;
-    PX.resolveAbilities(s);
-    PX.revealCalls(s);
+    PX.resolvePlan(s);
     PX.submitCard(s, 0, s.players[0].hand[0].id);
     PX.submitCard(s, 1, s.players[1].hand[0].id);
     return s;
@@ -245,8 +241,7 @@ test('Spirit World: +1 power can earn the number bonus, and a tied vote adds not
 test('a hand always keeps at least one card of your element', () => {
   const s = PX.createGame({ seats: ['lightning', 'seismic', 'healing'].map((sub, i) => ({ name: `P${i}`, sub })), seed: 7 });
   for (let n = 0; n < 40 && !s.over; n++) {
-    PX.resolveAbilities(s);
-    PX.revealCalls(s);
+    PX.resolvePlan(s);
     for (const p of s.players) {
       if (!p.alive) continue;
       assert.ok(p.hand.some((c) => c.el === p.element), `${p.name} has no ${p.element}`);
@@ -265,22 +260,22 @@ test('bots only see what they are allowed to: rival hands are absent from the vi
 
 function callRound(hands, calls) {
   const s = game(['lightning', 'healing', 'seismic'], hands);
-  PX.resolveAbilities(s);
   calls.forEach((el, i) => PX.submitCall(s, i, el));
   return s;
 }
 
-test('a call earns +1 charge if you play it, on top of any charge for your element', () => {
+test('charge: 1 every round, +1 for playing what you called, +1 for playing your element', () => {
   const hands = [
     [card('fire', 3), ...fill],
     [card('fire', 3), ...fill],
     [card('fire', 3), ...fill],
   ];
+  // Lightning is fire, Healing water, Seismic Sense earth. Everyone plays fire.
   const s = callRound(hands, ['fire', 'fire', 'water']);
-  PX.revealCalls(s);
+  PX.resolvePlan(s);
   s.players.forEach((p) => PX.submitCard(s, p.index, p.hand[0].id));
   const r = PX.resolveRound(s);
-  assert.deepStrictEqual(r.chargeGained, { 0: 2, 1: 1, 2: 0 });
+  assert.deepStrictEqual(r.chargeGained, { 0: 3, 1: 2, 2: 1 });
 });
 
 test('calls stay hidden until they are all revealed', () => {
@@ -289,14 +284,14 @@ test('calls stay hidden until they are all revealed', () => {
   assert.strictEqual(PX.viewFor(s, 1).players[0].call, null);
   assert.strictEqual(PX.viewFor(s, 0).myCall, 'water', 'you can see your own call');
   assert.throws(() => PX.submitCard(s, 0, s.players[0].hand[0].id), /Not the card phase/);
-  PX.revealCalls(s);
+  PX.resolvePlan(s);
   assert.strictEqual(PX.viewFor(s, 1).players[0].call, 'water');
 });
 
 test('every call goes on a public record of kept and broken calls', () => {
   const hands = [[card('fire', 3), ...fill], [card('fire', 3), ...fill], [card('fire', 3), ...fill]];
   const s = callRound(hands, ['fire', 'water', 'fire']);
-  PX.revealCalls(s);
+  PX.resolvePlan(s);
   s.players.forEach((p) => PX.submitCard(s, p.index, p.hand[0].id));
   PX.resolveRound(s);
   const seen = PX.viewFor(s, 2).players;
@@ -304,7 +299,7 @@ test('every call goes on a public record of kept and broken calls', () => {
   assert.deepStrictEqual([seen[1].callsMade, seen[1].callsKept], [1, 0]);
 });
 
-test('a bloodbent player still calls, and can lie about the forced card', () => {
+test('calls and sub-elements happen in the same step, so a bloodbent player has already called', () => {
   const s = game(['bloodbending', 'healing', 'metal'], [
     [card('water', 1), ...fill],
     [card('earth', 2), ...fill],
@@ -312,10 +307,11 @@ test('a bloodbent player still calls, and can lie about the forced card', () => 
   ]);
   s.players[0].charge = 4;
   PX.submitAbility(s, 0, { target: 1, slot: 0 });
-  PX.resolveAbilities(s);
   PX.submitCall(s, 1, 'fire');
-  PX.revealCalls(s);
+  PX.resolvePlan(s);
   assert.strictEqual(PX.viewFor(s, 2).players[1].call, 'fire');
+  assert.ok(s.turn.forced[1], 'the forced card is only set once the step ends');
+  assert.throws(() => PX.submitCall(s, 1, 'water'), /Not the call step/);
 });
 
 test('full bot games always finish with a winner', () => {
@@ -330,11 +326,10 @@ test('full bot games always finish with a winner', () => {
         const choice = STRATEGIES.smart.ability(PX.viewFor(s, p.index), rng);
         if (choice) PX.submitAbility(s, p.index, choice);
       }
-      PX.resolveAbilities(s);
       for (const p of s.players) {
         if (p.alive) PX.submitCall(s, p.index, STRATEGIES.smart.call(PX.viewFor(s, p.index), rng));
       }
-      PX.revealCalls(s);
+      PX.resolvePlan(s);
       for (const p of s.players) {
         if (p.alive) {
           if (!s.turn.forced[p.index]) PX.submitCard(s, p.index, STRATEGIES.smart.card(PX.viewFor(s, p.index), rng));

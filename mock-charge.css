@@ -1,0 +1,98 @@
+/* Mock designs for "Charging up" (mock-charge.html) only. */
+
+.cg-ask { text-align: center; margin-top: 0; }
+.cg-ask .el-icon { width: 1.2em; height: 1.2em; }
+
+/* Your charge: the power's picture and five dots. The dot with a ring is what Lightning costs. */
+.cg-meter { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.cg-thumb { width: 40px; flex: none; }
+.cg-thumb .power-img { border-radius: 6px; transition: box-shadow 0.3s; }
+.cg-pips { display: flex; gap: 5px; }
+
+.cg-pips i {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.cg-pips i.on { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+.cg-pips i.cost::after { content: ''; position: absolute; inset: -4px; border: 2px solid rgba(246, 239, 224, 0.7); border-radius: 50%; }
+
+.cg-meter.big { flex-wrap: wrap; margin: 0.4rem 0 0.8rem; }
+.cg-meter.big .cg-thumb { width: 72px; }
+.cg-meter.big .cg-pips { gap: 9px; }
+.cg-meter.big .cg-pips i { width: 26px; height: 26px; }
+.cg-meter.big .cg-pips i.cost::after { inset: -6px; border-width: 3px; }
+.cg-cost { flex-basis: 100%; text-align: center; color: var(--soft); font-size: 0.9rem; }
+
+.cg-meter.ready .power-img { box-shadow: 0 0 0 3px var(--gold), 0 0 24px #7FA6FF; }
+
+/* A drop of charge in flight. */
+.cg-orb {
+  position: fixed;
+  z-index: 12;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFF6D8 0%, var(--gold) 55%, transparent 75%);
+  box-shadow: 0 0 14px var(--gold);
+  pointer-events: none;
+}
+
+.fo-caption .dmg.gain { color: var(--gold); }
+
+/* B: the round log */
+
+.cg-log { display: flex; flex-direction: column; gap: 0.4rem; max-width: 24rem; margin: 0 auto !important; }
+.cg-log li { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(4, 14, 12, 0.6); }
+.help-body .cg-log .card { width: 30px; }
+.cg-log span:not(.card) { flex: 1; }
+.cg-log b { color: var(--gold); font-size: 1.1rem; }
+
+.cg-target { display: flex; justify-content: center; opacity: 0; }
+.help-body .cg-target .card { width: 64px; }
+.cg-target .rd-empty { width: 64px; }
+
+/* C */
+
+.cg-goal { text-align: center; margin: 0 0 0.6rem; }
+.duo-seat .cg-meter { margin-top: 0.2rem; }
+
+/* The new layout: your seat next to the checklist. */
+.cg-split { display: flex; justify-content: center; align-items: center; gap: 1.6rem; padding: 0.9rem; border: 1px solid rgba(217, 174, 82, 0.35); border-radius: 12px; background: rgba(4, 14, 12, 0.6); }
+.cg-you { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
+.cg-you .duo-name { font-weight: 700; color: var(--gold); }
+.help-body .cg-you .card { width: 80px; }
+.cg-you .rd-empty { width: 80px; }
+.cg-target .cg-you .duo-name { color: var(--bone); }
+
+.cg-receipt { display: flex; flex-direction: column; gap: 0.45rem; margin: 0 !important; }
+.cg-receipt li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--soft);
+  font-size: 1.05rem;
+  transition: opacity 0.2s, border-color 0.2s, color 0.2s;
+}
+.cg-receipt li b { color: var(--soft); min-width: 1.6rem; }
+.cg-receipt li.yes { color: var(--bone); border-color: var(--gold); background: rgba(217, 174, 82, 0.12); }
+.cg-receipt li.yes b { color: var(--gold); }
+.cg-receipt li.no { opacity: 0.35; text-decoration: line-through; }
+.cg-receipt .el-icon { width: 1.2em; height: 1.2em; }
+
+.cg-target { margin-top: 0.6rem; }
+
+@media (max-width: 560px) { .cg-split { flex-direction: column; } }
+
+/* The opening lines: why you need charge, then what your sub-element costs. */
+.cg-intro { text-align: center; margin-bottom: 0.7rem; }
+.cg-intro p { margin: 0.25rem 0; line-height: 1.4; }
+.cg-intro p:first-child { font-size: 1.2rem; }
+.cg-intro .el-icon { width: 1.2em; height: 1.2em; }
+.cg-intro .cg-how { margin-top: 0.6rem; color: var(--soft); }

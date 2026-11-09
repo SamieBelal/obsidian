@@ -8,9 +8,10 @@
     handSize: 5,
     maxCharge: 5,
     powers: [1, 2, 3, 4, 5, 6],
-    chargeForHit: 2,
-    chargeForMiss: 1,
+    // Charge each round: 1 for playing at all, 1 more for playing what you called, 1 more for playing your element.
+    chargePerRound: 1,
     callBonus: 1,
+    elementBonus: 1,
     suddenDeathBonus: 1,
     duelSuddenDeathRound: 8,
     roundLimit: 60,
@@ -151,7 +152,8 @@
     const suddenDeath = alive === 2 && (!state.duel || state.round >= CONFIG.duelSuddenDeathRound);
     if (suddenDeath && !state.suddenDeathRound) state.suddenDeathRound = state.round;
     state.turn = {
-      phase: 'abilities',
+      // A round is two steps, then the reveal: 'plan' (everyone calls and decides on their sub-element) and 'cards'.
+      phase: 'plan',
       suddenDeath,
       suddenDeathBonus: suddenDeath ? CONFIG.suddenDeathBonus + (state.round - state.suddenDeathRound) : 0,
       abilityChoices: {},
@@ -168,7 +170,7 @@
 
   function canUseAbility(state, i) {
     const p = state.players[i];
-    return p.alive && state.turn.phase === 'abilities' && p.charge >= SUBS[p.sub].cost;
+    return p.alive && state.turn.phase === 'plan' && p.charge >= SUBS[p.sub].cost;
   }
 
   function faceDownCards(p) {
@@ -186,9 +188,11 @@
     state.turn.abilityChoices[i] = choice;
   }
 
-  function resolveAbilities(state) {
+  // Ends step 1: sub-elements go off in a fixed order, the calls become public and the card step starts.
+  // Calls are made before anyone knows who used what, so a bloodbent player has already called.
+  function resolvePlan(state) {
     const turn = state.turn;
-    if (turn.phase !== 'abilities') throw new Error('Abilities already resolved');
+    if (turn.phase !== 'plan') throw new Error('Step 1 already resolved');
     const queue = Object.keys(turn.abilityChoices)
       .map(Number)
       .sort((a, b) => {
@@ -224,23 +228,18 @@
         turn.knowledge[i] = { target: t.index, hand: [forcedCard], forcedId: forcedCard.id };
       }
     }
-    turn.phase = 'calls';
+    turn.phase = 'cards';
     for (const iText of Object.keys(turn.forced)) {
       turn.cards[iText] = turn.forced[iText];
     }
   }
 
-  // Everyone calls an element in secret. It doesn't have to be true, and nobody sees a call until revealCalls.
+  // Everyone calls an element in secret. It doesn't have to be true, and nobody sees a call until resolvePlan.
   function submitCall(state, i, el) {
-    if (state.turn.phase !== 'calls') throw new Error('Not the call phase');
+    if (state.turn.phase !== 'plan') throw new Error('Not the call step');
     if (!state.players[i].alive) throw new Error('Player is out');
     if (!elementsFor(state.elementCount).includes(el)) throw new Error('Unknown element');
     state.turn.calls[i] = el;
-  }
-
-  function revealCalls(state) {
-    if (state.turn.phase !== 'calls') throw new Error('Not the call phase');
-    state.turn.phase = 'cards';
   }
 
   function submitCard(state, i, cardId) {
@@ -326,8 +325,8 @@
       const p = state.players[play.player];
       const hit = !play.silenced && plays.some((o) => o.player !== play.player && landsOn(play, o));
       report.hitsBy[play.player] = hit;
-      let gain = 0;
-      if (play.card.el === p.element) gain = hit ? CONFIG.chargeForHit : CONFIG.chargeForMiss;
+      let gain = CONFIG.chargePerRound;
+      if (play.card.el === p.element) gain += CONFIG.elementBonus;
       const called = turn.calls[play.player];
       if (called) {
         p.callsMade += 1;
@@ -428,7 +427,7 @@
 
   return {
     CONFIG, BEATS, SUBS, ABILITY_ORDER, makeRng, shuffle, elementsFor, subsFor,
-    createGame, beginRound, canUseAbility, submitAbility, resolveAbilities, submitCall, revealCalls,
+    createGame, beginRound, canUseAbility, submitAbility, resolvePlan, submitCall,
     submitCard, submitVote, resolveRound, viewFor, spiritElement, beats, matchupDamage,
   };
 });
