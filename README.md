@@ -2,7 +2,7 @@
 
 A quick card game for 2-6 friends, in beta. Everyone calls an element, which can be a lie, then plays a card at the same time. Last player standing wins. Full rules are in [RULES.md](RULES.md).
 
-**Play:** https://samiebelal.github.io/project-x/
+**Play:** https://samiebelal.github.io/obsidian/
 
 ## Playing with friends
 

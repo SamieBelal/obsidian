@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=540, initial-scale=1">
+  <title>Obsidian: reel</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@800&family=Familjen+Grotesk:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* A 9:16 promo reel built from the game's own cards and animations. Open it at 540x960 (it records at 2x),
+       then call startReel(). Captions stay out of the bottom fifth and the right edge, where reel apps put buttons. */
+    html, body { width: 540px; height: 960px; overflow: hidden; margin: 0; }
+    body { position: relative; }
+    .cap { position: absolute; left: 24px; right: 64px; top: 150px; text-align: center; color: var(--bone); }
+    .cap .big { display: block; font: 800 50px/1.05 var(--display); text-shadow: 0 4px 18px rgba(0, 0, 0, 0.85); }
+    .cap .small { display: block; margin-top: 10px; font: 700 22px/1.25 var(--body); color: var(--soft); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9); }
+    .el-fire { color: #FF8A5B; } .el-water { color: #6CC2F5; } .el-earth { color: #E2B566; }
+    .stage { position: absolute; left: 0; right: 0; top: 300px; height: 470px; display: flex; align-items: center; justify-content: center; }
+    .slot { position: relative; display: block; }
+    .slot .fx-dmg { left: 50%; }
+    .stage .card { width: 190px; }
+    .row { display: flex; gap: 26px; align-items: center; justify-content: center; }
+    .vs { font: 800 30px var(--display); color: var(--gold); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9); }
+    .grid { display: grid; grid-template-columns: repeat(2, 148px); gap: 18px 60px; }
+    .grid .card { width: 148px; }
+    .seat { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 14px; background: rgba(6, 19, 18, 0.75); border: 1.5px solid rgba(217, 174, 82, 0.5); }
+    .seat .card { width: 140px; }
+    .seat b { font: 800 20px var(--display); color: var(--bone); }
+    .col { display: flex; flex-direction: column; gap: 60px; align-items: center; }
+    .call { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 999px; background: rgba(9, 26, 24, 0.95); border: 1.5px solid rgba(246, 239, 224, 0.5); font: 800 24px var(--body); color: var(--bone); }
+    .call .el-icon { width: 30px; height: 30px; }
+    .stamp { position: absolute; top: 72%; left: 50%; font: 800 92px var(--display); color: #FF5A3C; -webkit-text-stroke: 4px #3A0A04; paint-order: stroke fill; text-shadow: 0 0 30px rgba(255, 90, 60, 0.7); }
+    .title { font: 800 92px/1 var(--display); letter-spacing: 0.04em; color: #F6EFE0; text-shadow: 0 0 34px rgba(159, 232, 255, 0.45), 0 6px 20px rgba(0, 0, 0, 0.9); }
+    .fan { position: relative; width: 400px; height: 320px; }
+    .fan .card { position: absolute; width: 175px; top: 30px; left: 112px; }
+    .end-link { display: block; margin-top: 16px; font: 700 20px var(--body); color: var(--gold); }
+  </style>
+</head>
+<body>
+  <div class="cap" id="cap"></div>
+  <div class="stage" id="stage"></div>
+  <script src="vendor/gsap.min.js"></script>
+  <script src="engine.js"></script>
+  <script src="art.js"></script>
+  <script src="fx.js"></script>
+  <script>
+    const { matchupDamage, SUBS } = PX;
+    const { cardArt, cardBack } = PXArt;
+    const capEl = document.getElementById('cap');
+    const stage = document.getElementById('stage');
+    const layer = PXFx.createLayer(document.body);
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    const icon = (el) => `<img class="el-icon" src="art/board/icon-${el}.webp" alt="">`;
+    const card = (el, p, attrs = '') => `<span class="slot"><span class="card" ${attrs}>${cardArt(el, p)}</span></span>`;
+    const back = (attrs = '') => `<span class="slot"><span class="card" ${attrs}>${cardBack()}</span></span>`;
+    const q = (sel) => stage.querySelector(sel);
+    const qa = (sel) => [...stage.querySelectorAll(sel)];
+
+    function caption(big, small = '') {
+      capEl.innerHTML = `<span class="big">${big}</span>${small ? `<span class="small">${small}</span>` : ''}`;
+      return gsap.fromTo(capEl, { y: 24, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' });
+    }
+    function scene(html) {
+      layer.clear();
+      document.querySelectorAll('.fx-label, .stamp').forEach((e) => e.remove());
+      stage.innerHTML = html;
+    }
+    const slamIn = (els, from = 'y') => gsap.fromTo(els, { [from]: from === 'y' ? -60 : 0, scale: 1.35, opacity: 0 }, { [from]: 0, scale: 1, opacity: 1, duration: 0.3, stagger: 0.12, ease: 'back.out(2.2)' });
+    const flip = (els) => gsap.fromTo(els, { rotationY: 90, transformPerspective: 600 }, { rotationY: 0, duration: 0.25, stagger: 0.06, ease: 'back.out(2)' });
+
+    // 1. Title: the three elements slam onto the table under the name.
+    async function title() {
+      caption('<span class="title">OBSIDIAN</span>', 'Fire. Water. Earth. Lies.');
+      scene(`<div class="fan">${card('water', 6, 'data-f="0"')}${card('fire', 6, 'data-f="1"')}${card('earth', 6, 'data-f="2"')}</div>`);
+      const fan = qa('.fan .card');
+      await wait(250);
+      await gsap.fromTo(fan, { y: -160, opacity: 0, rotation: 0 }, { y: 0, opacity: 1, rotation: (i) => [-14, 0, 14][i], x: (i) => [-110, 0, 110][i], duration: 0.45, stagger: 0.15, ease: 'back.out(1.8)' });
+      gsap.fromTo(fan, { filter: 'brightness(1.6)' }, { filter: 'brightness(1)', duration: 0.6 });
+      await wait(1100);
+    }
+
+    // 2. Who beats who, three quick face-offs.
+    async function beats() {
+      const SAY = { water: 'puts out', fire: 'scorches', earth: 'buries' };
+      for (const a of ['water', 'fire', 'earth']) {
+        const b = PX.BEATS[3][a][0];
+        caption(`<span class="el-${a}">${cap(a)}</span> ${SAY[a]} <span class="el-${b}">${b}</span>`);
+        scene(`<div class="row">${card(a, 4, 'data-a')}<span class="vs">vs</span>${card(b, 4, 'data-b')}</div>`);
+        await gsap.timeline()
+          .fromTo(q('[data-a]'), { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.22, ease: 'back.out(1.6)' })
+          .fromTo(q('[data-b]'), { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.22, ease: 'back.out(1.6)' }, '<');
+        await PXFx.attack(layer, q('[data-a]'), a, [{ card: q('[data-b]'), amount: 1 }]);
+        await wait(150);
+      }
+    }
+
+    // 3. The bluff: Reed calls water, flips fire.
+    async function bluff() {
+      caption('Call your element...');
+      scene(`<div class="col"><div class="seat" data-who="reed"><b>Reed</b><span class="call" style="opacity:0">${icon('water')} Water</span>${back('data-r')}</div></div>`);
+      await slamIn(q('.seat'));
+      await wait(200);
+      await gsap.fromTo(q('.call'), { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(3)' });
+      await wait(700);
+      caption('...or <span class="el-fire">lie.</span>');
+      await wait(500);
+      q('[data-r]').innerHTML = cardArt('fire', 6);
+      await flip(q('[data-r]'));
+      const stamp = document.createElement('span');
+      stamp.className = 'stamp';
+      stamp.textContent = 'BLUFF!';
+      document.body.appendChild(stamp);
+      await gsap.fromTo(stamp, { xPercent: -50, yPercent: -50, scale: 2.6, rotation: -16, opacity: 0 }, { scale: 1, opacity: 1, rotation: -10, duration: 0.3, ease: 'back.out(2)' });
+      gsap.fromTo(document.body, { x: 0 }, { keyframes: { x: [-8, 7, -5, 3, 0] }, duration: 0.35 });
+      await wait(1100);
+    }
+
+    // 4. Everyone flips at once: four cards, every card fights every other.
+    async function everyone() {
+      const T = [{ el: 'fire', power: 4 }, { el: 'earth', power: 5 }, { el: 'water', power: 2 }, { el: 'fire', power: 6 }];
+      caption('Everyone flips <span class="el-fire">at once</span>', 'Every card fights every card.');
+      scene(`<div class="grid">${T.map((_, i) => back(`data-t="${i}"`)).join('')}</div>`);
+      const cards = qa('[data-t]');
+      await slamIn(cards);
+      await wait(300);
+      cards.forEach((c, i) => { c.innerHTML = cardArt(T[i].el, T[i].power); });
+      await flip(cards);
+      for (let i = 0; i < T.length; i++) {
+        const targets = T.map((o, j) => ({ card: cards[j], amount: i === j ? 0 : matchupDamage(3, T[i], o) })).filter((t) => t.amount > 0);
+        if (targets.length) await PXFx.attack(layer, cards[i], T[i].el, targets);
+      }
+      await wait(400);
+    }
+
+    // 5. Sub-elements: three quick powers on a two-seat table.
+    async function powers() {
+      caption('Charge up a <span class="el-water">power</span>', 'Six sub-elements. Pick one.');
+      scene(`<div class="col">
+        <div class="seat" data-who="reed"><b>Reed</b>${card('earth', 3, 'data-r')}</div>
+        <div class="seat" data-who="you"><b>You</b>${card('fire', 5, 'data-y')}</div>
+      </div>`);
+      const reed = q('[data-who="reed"]');
+      const you = q('[data-who="you"]');
+      await slamIn([reed, you]);
+      await PXFx.ability(layer, document.body, 'lightning', you, reed);
+      await PXFx.strike(layer, q('[data-r]'), SUBS.lightning.amount, false);
+      await wait(250);
+      await PXFx.ability(layer, document.body, 'metal', reed, null);
+      await PXFx.attack(layer, q('[data-y]'), 'fire', [{ card: q('[data-r]'), amount: 2, blocked: true }]);
+      await wait(150);
+      await PXFx.ability(layer, document.body, 'bloodbending', reed, you);
+      await wait(350);
+    }
+
+    // 6. The end: the winner, the name and where to play.
+    async function finale() {
+      caption('Last one <span class="el-earth">standing</span> wins');
+      scene(`<div class="row">${card('water', 6, 'data-w')}</div>`);
+      const w = q('[data-w]');
+      await slamIn(w);
+      const r = w.getBoundingClientRect();
+      const colors = ['#FFF8E1', '#FFE08A', '#D9AE52', '#FFB13B'];
+      for (let i = 0; i < 90; i++) {
+        const angle = -Math.PI * Math.random();
+        const speed = 240 + Math.random() * 380;
+        layer.add({ x: r.left + r.width / 2, y: r.top + r.height / 2, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, drag: 1.4, gravity: 420, size: 4 + Math.random() * 6, life: 0.9 + Math.random() * 0.7, delay: Math.random() * 0.3, colors });
+      }
+      gsap.fromTo(w, { scale: 1 }, { scale: 1.1, duration: 0.25, yoyo: true, repeat: 1 });
+      await wait(1500);
+      caption('<span class="title">OBSIDIAN</span>', 'Play free with 2-6 friends<span class="end-link">samiebelal.github.io/obsidian</span><span class="small">Link in bio</span>');
+      await gsap.to(stage, { opacity: 0.25, duration: 0.4 });
+      await wait(2200);
+    }
+
+    window.startReel = async () => {
+      PXFx.setSpeed(1.15);
+      await title();
+      await beats();
+      await bluff();
+      await everyone();
+      await powers();
+      await finale();
+      window.reelDone = true;
+    };
+    window.reelReady = document.fonts.ready.then(() => wait(500));
+    // Opened by hand (not by the recorder)? Play it with a click.
+    document.addEventListener('click', () => { if (!window.reelStarted) { window.reelStarted = true; window.startReel(); } });
+  </script>
+</body>
+</html>
