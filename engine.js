@@ -1,4 +1,4 @@
-// Project X rules engine. Pure game logic with no DOM, shared by the browser game and the simulator.
+// Obsidian rules engine. Pure game logic with no DOM, shared by the browser game and the simulator.
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.PX = factory();

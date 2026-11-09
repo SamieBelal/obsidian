@@ -36,6 +36,7 @@
     let timer = null;
     let timerKey = null;
     let deadline = null;
+    let closed = false; // once the host leaves, the room stops sending and its timers stop
 
     const seatOf = (token) => seats.findIndex((s) => s.token === token);
     const validSubs = () => PX.subsFor(elementCount);
@@ -104,6 +105,7 @@
     }
 
     function publish() {
+      if (closed) return;
       humans().forEach(({ s, i }) => { if (s.online) send(s.token, stateFor(i)); });
     }
 
@@ -289,6 +291,7 @@
       },
 
       action(token, action) {
+        if (closed) return;
         const i = seatOf(token);
         if (i < 0 || !action || typeof action.type !== 'string') return;
         try {
@@ -305,6 +308,12 @@
       },
 
       isPlaying: () => stage === 'playing' || stage === 'reveal',
+
+      // Shuts the room down: no more timers, bot turns or messages.
+      close() {
+        closed = true;
+        stopTimer();
+      },
     };
   }
 

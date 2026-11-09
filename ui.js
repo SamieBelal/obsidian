@@ -9,7 +9,9 @@
     message: '',
     state: null,
     send: null, // sends an action to the room
-    host: null,
+    host: null, // the room, when this tab hosts it for friends
+    room: null, // the room this tab runs, hosted or practice, so leaving can shut it down
+    net: null, // the connection to friends, when there is one
     status: 'connected',
     pick: null, // the player's half-finished ability choice
     flippedRound: null,
@@ -218,6 +220,7 @@
     devPractice();
     const token = 'solo';
     const room = PXHost.createRoom({ send: (_t, s) => receive(s) });
+    session.room = room;
     session.send = (action) => room.action(token, action);
     room.join(token, 'You');
     for (let n = 0; n < bots; n++) room.addBot();
@@ -237,6 +240,7 @@
         });
         session.send = (action) => room.action(token, action);
         session.host = room;
+        session.room = room;
         room.join(token, name);
         setUrl(code);
         keepScreenOn();
@@ -250,6 +254,7 @@
       leave: (t) => room.leave(t),
       action: (t, data) => room.action(t, data),
     });
+    session.net = net;
   }
 
   function joinRoom(code, name) {
@@ -278,8 +283,29 @@
       },
     });
     session.send = (action) => net.send(action);
+    session.net = net;
     setUrl(code);
     keepScreenOn();
+  }
+
+  // Back to the home screen from anywhere. Asks first if leaving would end a game or close a room.
+  function goHome() {
+    const inGame = session.mode === 'room' && session.state && session.state.screen === 'game' && session.state.stage !== 'over';
+    let question = null;
+    if (session.host && session.mode === 'room') question = 'Leave and close the room? Everyone in it will be disconnected.';
+    else if (inGame && session.net) question = 'Leave the game? You can get back in with the room code.';
+    else if (inGame) question = 'Leave this practice game?';
+    if (question && !window.confirm(question)) return;
+    if (session.net) session.net.close('The host closed the room.');
+    if (session.room) session.room.close();
+    if (window.gsap) gsap.globalTimeline.getChildren().forEach((t) => t.kill());
+    if (fxLayer) fxLayer.clear();
+    Object.assign(session, {
+      mode: 'home', message: '', state: null, send: null, host: null, room: null, net: null, status: 'connected',
+      pick: null, flippedRound: null, deadline: null, lastHp: {}, fx: null, abilityFx: null, callsRound: null,
+    });
+    setUrl(null);
+    render();
   }
 
   // Home
@@ -288,7 +314,7 @@
     const code = roomFromUrl();
     app.innerHTML = `
       <section class="setup home">
-        <h1>Project X</h1>
+        <h1>Obsidian</h1>
         <p class="pitch">Call an element, play a card, and bluff your friends. Last one standing wins. For 2-6 players.</p>
         ${session.message ? `<p class="notice" role="alert">${esc(session.message)}</p>` : ''}
         ${session.mode === 'connecting' ? '' : `
@@ -718,10 +744,14 @@
   }
 
   function render() {
+    homeButton.hidden = session.mode === 'home';
     if (session.mode !== 'room') return renderHome();
     if (session.state.screen === 'lobby') return renderLobby(session.state);
     return renderGame(session.state);
   }
+
+  const homeButton = document.getElementById('home');
+  homeButton.addEventListener('click', goHome);
 
   setInterval(tick, 500);
 

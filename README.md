@@ -1,4 +1,4 @@
-# Project X
+# Obsidian
 
 A quick card game for 2-6 friends, in beta. Everyone calls an element, which can be a lie, then plays a card at the same time. Last player standing wins. Full rules are in [RULES.md](RULES.md).
 
@@ -41,4 +41,4 @@ There's no build step and nothing to install.
 | `music.js` | Background music, with the volume set at the top of the file |
 | `sim.js` | Balance simulator |
 
-Project X is a working name. It's a fan-made beta, not affiliated with Avatar: The Last Airbender or Club Penguin.
+Obsidian is a fan-made beta, not affiliated with Avatar: The Last Airbender or Club Penguin.

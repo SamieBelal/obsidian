@@ -1,6 +1,6 @@
-# Project X rules
+# Obsidian rules
 
-Project X is a working name. Numbers below are what the game currently uses.
+Numbers below are what the game currently uses.
 
 ## Goal
 

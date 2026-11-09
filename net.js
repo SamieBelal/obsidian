@@ -67,9 +67,11 @@
         const conn = conns[token];
         if (conn && conn.open) conn.send(message);
       },
-      close() {
+      // Tells everyone the room is closing, then shuts it. The short wait lets that message go out first.
+      close(reason) {
         clearInterval(pinger);
-        peer.destroy();
+        Object.values(conns).forEach((conn) => { if (conn.open) conn.send({ type: 'rejected', reason }); });
+        setTimeout(() => peer.destroy(), 300);
       },
     };
   }
@@ -147,6 +149,13 @@
     return {
       send(message) {
         if (conn && conn.open) conn.send(message);
+      },
+      // Leaves the room on purpose: no reconnecting and no error.
+      close() {
+        finished = true;
+        clearInterval(watchdog);
+        if (conn) conn.close();
+        peer.destroy();
       },
     };
   }

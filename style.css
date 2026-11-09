@@ -701,6 +701,9 @@ button.seat:hover { background: #55416A; }
 
 .tool:hover { color: var(--bone); background: var(--raised); }
 
+/* Home sits on the left, away from the other tools. */
+#home { margin-right: auto; }
+
 #help-open { color: var(--bone); text-decoration: underline; text-underline-offset: 3px; }
 
 /* How to play */
